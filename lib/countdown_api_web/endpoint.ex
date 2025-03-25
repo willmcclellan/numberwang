@@ -7,18 +7,15 @@ defmodule CountdownApiWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_countdown_api_key",
-    signing_salt: "rOWHquPc",
+    signing_salt: "z4Gu6Ypt",
     same_site: "Lax"
   ]
 
-  socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
-    longpoll: [connect_info: [session: @session_options]]
+  socket "/socket", CountdownApiWeb.UserSocket,
+    websocket: true,
+    longpoll: false
 
   # Serve at "/" the static files from "priv/static" directory.
-  #
-  # You should set gzip to true if you are running phx.digest
-  # when deploying your static files in production.
   plug Plug.Static,
     at: "/",
     from: :countdown_api,
@@ -47,5 +44,6 @@ defmodule CountdownApiWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  plug CORSPlug
   plug CountdownApiWeb.Router
 end
