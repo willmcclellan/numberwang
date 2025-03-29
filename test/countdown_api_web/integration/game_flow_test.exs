@@ -44,8 +44,9 @@ defmodule CountdownApiWeb.Integration.GameFlowTest do
 
     # Both players submit answers
     ref1 = push(socket1, "submit_answer", %{"game_id" => game_id, "value" => "CAT"})
-    assert_reply ref1, :ok, %{submission_id: submission_id1}
+    assert_reply ref1, :ok, %{submission_id: _submission_id1}
     ref2 = push(socket2, "submit_answer", %{"game_id" => game_id, "value" => "HAT"})
+    assert_reply ref2, :ok, %{submission_id: _submission_id2}
 
     # Both should receive submission broadcasts
     assert_broadcast "new_submission", %{value: "CAT"}, 1000
