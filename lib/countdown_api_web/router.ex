@@ -7,7 +7,7 @@ defmodule CountdownApiWeb.Router do
 
   scope "/api", CountdownApiWeb do
     pipe_through :api
-    
+
     resources "/groups", GroupController, only: [:index, :show, :create] do
       resources "/players", PlayerController, only: [:index, :show, :create]
       resources "/games", GameController, only: [:index, :show]

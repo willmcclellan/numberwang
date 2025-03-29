@@ -3,13 +3,16 @@ defmodule CountdownApi.GameServer do
   Manages the state and logic for a single game instance.
   """
   use GenServer, restart: :temporary
-  
+
   alias CountdownApi.{Repo, Dictionary}
   alias CountdownApi.Schemas.{Game, Submission}
   alias Phoenix.PubSub
+  import Ecto.Query
 
   @pubsub CountdownApi.PubSub
-  @timeout 60_000 * 5  # 5 minutes timeout for inactive games
+  # 5 minutes timeout for inactive games
+  @timeout 60_000 * 5
+  @timeout_multiplier if Mix.env() == :test, do: 0.1, else: 1
 
   # Client API
 
@@ -38,21 +41,30 @@ defmodule CountdownApi.GameServer do
   @impl true
   def init(game_id) do
     game = Repo.get!(Game, game_id) |> Repo.preload([:group])
-    
+
+    game_duration = trunc(game.duration * 1000 * @timeout_multiplier)
+
     # Schedule game end
-    Process.send_after(self(), :end_game, game.duration * 1000)
-    
+    # NOTE multiplier used to help tests run faster
+    Process.send_after(self(), :end_game, game_duration)
+
+    {:ok, %{game: game, submissions: []}, @timeout}
+
     # Update game with start time
     {:ok, game} = update_game(game, %{started_at: DateTime.utc_now()})
-    
+
     # Broadcast game start
     broadcast(game, "game_started", %{game: game_to_map(game)})
-    
+
     {:ok, %{game: game, submissions: []}, @timeout}
   end
 
   @impl true
-  def handle_call({:submit, player_id, value}, _from, %{game: game, submissions: submissions} = state) do
+  def handle_call(
+        {:submit, player_id, value},
+        _from,
+        %{game: game, submissions: submissions} = state
+      ) do
     # Create submission
     attrs = %{
       game_id: game.id,
@@ -62,7 +74,7 @@ defmodule CountdownApi.GameServer do
       valid: initial_validation(game, value),
       score: calculate_score(game, value)
     }
-    
+
     case Repo.insert(Submission.changeset(%Submission{}, attrs)) do
       {:ok, submission} ->
         # Broadcast submission to all players
@@ -72,10 +84,9 @@ defmodule CountdownApi.GameServer do
           valid: submission.valid,
           score: submission.score
         })
-        
-        {:reply, {:ok, submission}, 
-         %{state | submissions: [submission | submissions]}, @timeout}
-      
+
+        {:reply, {:ok, submission}, %{state | submissions: [submission | submissions]}, @timeout}
+
       {:error, changeset} ->
         {:reply, {:error, changeset}, state, @timeout}
     end
@@ -88,31 +99,34 @@ defmodule CountdownApi.GameServer do
 
   @impl true
   def handle_call(:end_game, _from, state) do
-    {:reply, :ok, state, 0}  # Timeout of 0 will stop the process after reply
+    # Timeout of 0 will stop the process after reply
+    {:reply, :ok, state, 0}
   end
 
   @impl true
   def handle_call(:get_results, _from, %{game: game} = state) do
-    results = case game.game_type do
-      "letters" ->
-        %{
-          word_distribution: Dictionary.word_length_distribution(game.letters),
-          all_words: Dictionary.find_words(game.letters)
-        }
-      
-      "conundrum" ->
-        %{
-          all_words: Dictionary.find_words(game.letters)
-        }
-      
-      "numbers" ->
-        solutions = find_number_solutions(game.numbers, game.target)
-        %{
-          possible: length(solutions) > 0,
-          solutions: solutions
-        }
-    end
-    
+    results =
+      case game.game_type do
+        "letters" ->
+          %{
+            word_distribution: Dictionary.word_length_distribution(game.letters),
+            all_words: Dictionary.find_words(game.letters)
+          }
+
+        "conundrum" ->
+          %{
+            all_words: Dictionary.find_words(game.letters)
+          }
+
+        "numbers" ->
+          solutions = find_number_solutions(game.numbers, game.target)
+
+          %{
+            possible: length(solutions) > 0,
+            solutions: solutions
+          }
+      end
+
     {:reply, {:ok, results}, state, @timeout}
   end
 
@@ -120,16 +134,17 @@ defmodule CountdownApi.GameServer do
   def handle_info(:end_game, %{game: game, submissions: submissions} = state) do
     # Update game with end time
     {:ok, game} = update_game(game, %{finished_at: DateTime.utc_now()})
-    
+
+
     # Validate all submissions and update them
     validate_all_submissions(game, submissions)
-    
+
     # Broadcast game end
     broadcast(game, "game_ended", %{
       game_id: game.id,
       results: get_game_results(game)
     })
-    
+
     # Stop the server
     {:stop, :normal, state}
   end
@@ -153,7 +168,11 @@ defmodule CountdownApi.GameServer do
 
   defp broadcast(game, event, payload) do
     topic = "group:#{game.group_id}"
-    PubSub.broadcast(@pubsub, topic, {event, payload})
+    PubSub.broadcast(@pubsub, topic, %Phoenix.Socket.Broadcast{
+      topic: topic,
+      event: event,
+      payload: payload
+    })
   end
 
   # Basic validation during gameplay - will be refined at game end
@@ -169,27 +188,32 @@ defmodule CountdownApi.GameServer do
   # Calculate scoring
   defp calculate_score(game, value) do
     case game.game_type do
-      "letters" -> 
+      "letters" ->
         if Dictionary.valid_word?(value), do: String.length(value), else: 0
-      "conundrum" -> 
+
+      "conundrum" ->
         if Dictionary.valid_word?(value), do: 10, else: 0
+
       "numbers" ->
         case evaluate_expression(value) do
-          {:ok, result} -> 
+          {:ok, result} ->
             diff = abs(game.target - result)
+
             cond do
               diff == 0 -> 10
               diff <= 5 -> 7
               diff <= 10 -> 5
               true -> 0
             end
-          _ -> 0
+
+          _ ->
+            0
         end
     end
   end
 
   # Final validation at game end
-  defp validate_all_submissions(game, submissions) do
+  defp validate_all_submissions(_game, submissions) do
     # Implement more thorough validation if needed
     # For example, checking that letters are actually available in the game
     Enum.each(submissions, fn submission ->
@@ -200,30 +224,35 @@ defmodule CountdownApi.GameServer do
   # Get final game results
   defp get_game_results(game) do
     submissions = Repo.all(from s in Submission, where: s.game_id == ^game.id, preload: [:player])
-    
-    winner = submissions
-    |> Enum.filter(& &1.valid)
-    |> Enum.sort_by(& &1.score, :desc)
-    |> List.first()
-    
+
+    winner =
+      submissions
+      |> Enum.filter(& &1.valid)
+      |> Enum.sort_by(& &1.score, :desc)
+      |> List.first()
+
     %{
       game_id: game.id,
       game_type: game.game_type,
-      winner: winner && %{
-        player_id: winner.player_id,
-        player_name: winner.player.name,
-        value: winner.value,
-        score: winner.score
-      },
-      submissions: submissions |> Enum.map(fn s -> 
-        %{
-          player_id: s.player_id,
-          player_name: s.player.name,
-          value: s.value,
-          valid: s.valid,
-          score: s.score
-        }
-      end)
+      winner:
+        winner &&
+          %{
+            player_id: winner.player_id,
+            player_name: winner.player.name,
+            value: winner.value,
+            score: winner.score
+          },
+      submissions:
+        submissions
+        |> Enum.map(fn s ->
+          %{
+            player_id: s.player_id,
+            player_name: s.player.name,
+            value: s.value,
+            valid: s.valid,
+            score: s.score
+          }
+        end)
     }
   end
 
@@ -264,7 +293,7 @@ defmodule CountdownApi.GameServer do
 
   # Find all possible solutions for the numbers game
   # This is a simplified implementation - you'd want a more efficient algorithm in production
-  defp find_number_solutions(numbers, target) do
+  defp find_number_solutions(numbers, _target) do
     # TODO implement this
     # For demonstration, we'll just return a dummy solution
     # In a real implementation, you'd use a recursive algorithm to find all valid solutions

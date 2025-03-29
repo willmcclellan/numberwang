@@ -15,6 +15,5 @@ defmodule CountdownApi.Repo.Migrations.CreateSubmissions do
     create index(:submissions, [:player_id])
     create index(:submissions, [:game_id])
     create index(:submissions, [:valid])
-
   end
 end

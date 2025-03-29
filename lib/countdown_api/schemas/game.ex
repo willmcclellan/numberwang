@@ -24,11 +24,21 @@ defmodule CountdownApi.Schemas.Game do
   @doc false
   def changeset(game, attrs) do
     game
-    |> cast(attrs, [:game_type, :duration, :letters, :numbers, :target, :started_at, :finished_at, :large_number_count, :group_id])
+    |> cast(attrs, [
+      :game_type,
+      :duration,
+      :letters,
+      :numbers,
+      :target,
+      :started_at,
+      :finished_at,
+      :large_number_count,
+      :group_id
+    ])
     |> validate_required([:game_type, :duration, :group_id])
     |> validate_inclusion(:game_type, @game_types)
     |> validate_inclusion(:duration, @durations)
-    |> validate_number(:target, greater_than_or_equal_to: 0, less_than_or_equal_to: 4)
+    |> validate_number(:target, greater_than_or_equal_to: 100, less_than_or_equal_to: 999)
     |> validate_game_type_data()
     |> foreign_key_constraint(:group_id)
   end

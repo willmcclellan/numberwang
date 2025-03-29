@@ -18,6 +18,5 @@ defmodule CountdownApi.Repo.Migrations.CreateGames do
 
     create index(:games, [:group_id])
     create unique_index(:games, [:game_type])
-
   end
 end
