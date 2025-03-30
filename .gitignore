@@ -1,27 +1,60 @@
-# The directory Mix will write compiled artifacts to.
-/_build/
+# Root level ignores
+.DS_Store
+.env
+.env.*
+!.env.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
 
-# If you run "mix test --cover", coverage assets end up here.
-/cover/
+# Elixir / Phoenix backend ignores
+/api/_build/
+/api/cover/
+/api/deps/
+/api/doc/
+/api/.fetch
+/api/erl_crash.dump
+/api/*.ez
+/api/tmp/
+/api/priv/static/
+/api/priv/cert/
+/api/api-*.tar
+/api/.elixir_ls/
 
-# The directory Mix downloads your dependencies sources to.
-/deps/
+# Ignore potentially sensitive config files
+/api/config/*.secret.exs
+/api/config/*.local.exs
 
-# Where 3rd-party dependencies like ExDoc output generated docs.
-/doc/
+# Ignore generated assets from the frontend
+/api/priv/static/assets/
+/api/priv/static/cache_manifest.json
 
-# Ignore .fetch files in case you like to edit your project deps locally.
-/.fetch
+# React / Frontend ignores
+/client/node_modules/
+/client/.pnp
+/client/.pnp.js
 
-# If the VM crashes, it generates a dump, let's ignore it too.
-erl_crash.dump
+# Testing
+/client/coverage/
 
-# Also ignore archive artifacts (built via "mix archive.build").
-*.ez
+# Production
+/client/dist/
+/client/build/
 
-# Temporary files, for example, from tests.
-/tmp/
+# Misc
+/client/.env.local
+/client/.env.development.local
+/client/.env.test.local
+/client/.env.production.local
 
-# Ignore package tarball (built via "mix hex.build").
-countdown_api-*.tar
+# Cache files
+/client/.eslintcache
+/client/.stylelintcache
 
+# Logs
+/client/logs
+/client/*.log
