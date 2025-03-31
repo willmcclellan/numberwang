@@ -1,0 +1,48 @@
+services:
+  api:
+    build: ./api
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/countdown_api_dev
+      - MIX_ENV=dev
+    volumes:
+      - ./api:/app
+      - api_deps:/app/deps
+      - api_build:/app/_build
+    depends_on:
+      - db
+    command: mix phx.server
+
+  client:
+    build: ./client
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:4000
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    command: npm run dev
+
+  db:
+    image: postgres:14
+    container_name: postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=countdown_api_dev
+      - GOSU_VERSION=1.17
+      - LANG=en_US.utf8
+      - PG_MAJOR=17
+      - PG_VERSION=17.4-1.pgdg120+2
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
+  api_deps:
+  api_build:
