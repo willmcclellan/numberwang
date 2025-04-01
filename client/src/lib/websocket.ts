@@ -1,9 +1,10 @@
 import { Socket, Channel } from 'phoenix';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware'
 
 interface WebSocketStore {
-  socket: Socket | null;
-  channel: Channel | null;
+  _socket: Socket | null;
+  _channel: Channel | null;
   connected: boolean;
   playerName: string | null;
   groupName: string | null;
@@ -16,101 +17,107 @@ interface WebSocketStore {
 
 const SOCKET_URL = 'ws://localhost:4000/socket';
 
-export const useWebSocket = create<WebSocketStore>((set, get) => ({
-  socket: null,
-  channel: null,
-  connected: false,
-  playerName: null,
-  groupName: null,
+export const useWebSocket = create<WebSocketStore>()(persist(
+  (set, get) => ({
+    _socket: null,
+    _channel: null,
+    connected: false,
+    playerName: null,
+    groupName: null,
 
-  connect: async (playerName: string) => {
-    const socket = new Socket(SOCKET_URL, {
-      params: { player_name: playerName }
-    });
-
-    socket.connect();
-
-    await new Promise((resolve, reject) => {
-      socket.onOpen(() => {
-        set({ socket, connected: true, playerName });
-        resolve(undefined);
+    connect: async (playerName: string) => {
+      const socket = new Socket(SOCKET_URL, {
+        params: { player_name: playerName }
       });
 
-      socket.onError(() => reject(new Error('Failed to connect')));
-    });
+      socket.connect();
+
+      await new Promise((resolve, reject) => {
+        socket.onOpen(() => {
+          set({ _socket: socket, connected: true, playerName });
+          resolve(undefined);
+        });
+
+        socket.onError(() => reject(new Error('Failed to connect')));
+      });
+    },
+
+    disconnect: () => {
+      const { _socket: socket } = get();
+      if (socket) {
+        socket.disconnect();
+        set({ _socket: null, _channel: null, connected: false, playerName: null, groupName: null });
+      }
+    },
+
+    joinGroup: async (groupName: string) => {
+      const { _socket: socket } = get();
+      if (!socket) throw new Error('Not connected');
+
+      const channel = socket.channel(`group:${groupName}`, {
+        player_name: get().playerName
+      });
+
+      await new Promise((resolve, reject) => {
+        channel.join()
+          .receive('ok', (response) => {
+            set({ _channel: channel, groupName });
+            resolve(response);
+          })
+          .receive('error', (error) => reject(error));
+      });
+
+      // Set up channel event listeners
+      channel.on('players_list', (payload) => {
+        // Handle players list update
+        console.log('Players list:', payload);
+      });
+
+      channel.on('player_joined', (payload) => {
+        // Handle new player
+        console.log('Player joined:', payload);
+      });
+
+      channel.on('game_started', (payload) => {
+        // Handle game start
+        console.log('Game started:', payload);
+      });
+
+      channel.on('new_submission', (payload) => {
+        // Handle new submission
+        console.log('New submission:', payload);
+      });
+
+      channel.on('game_ended', (payload) => {
+        // Handle game end
+        console.log('Game ended:', payload);
+      });
+    },
+
+    leaveGroup: () => {
+      const { _channel: channel } = get();
+      if (channel) {
+        channel.leave();
+        set({ _channel: null, groupName: null });
+      }
+    },
+
+    sendEvent: async (event: string, payload: any) => {
+      const { _channel: channel } = get();
+      if (!channel) throw new Error('Not in a group');
+
+      return new Promise((resolve, reject) => {
+        channel.push(event, payload)
+          .receive('ok', resolve)
+          .receive('error', reject);
+      });
+    },
+  }),
+  { 
+    name: 'websocket-store', 
+    partialize: state => ({ ...state, _socket: null, _channel: null }),
   },
-
-  disconnect: () => {
-    const { socket } = get();
-    if (socket) {
-      socket.disconnect();
-      set({ socket: null, channel: null, connected: false, playerName: null, groupName: null });
-    }
-  },
-
-  joinGroup: async (groupName: string) => {
-    const { socket } = get();
-    if (!socket) throw new Error('Not connected');
-
-    const channel = socket.channel(`group:${groupName}`, {
-      player_name: get().playerName
-    });
-
-    await new Promise((resolve, reject) => {
-      channel.join()
-        .receive('ok', (response) => {
-          set({ channel, groupName });
-          resolve(response);
-        })
-        .receive('error', (error) => reject(error));
-    });
-
-    // Set up channel event listeners
-    channel.on('players_list', (payload) => {
-      // Handle players list update
-      console.log('Players list:', payload);
-    });
-
-    channel.on('player_joined', (payload) => {
-      // Handle new player
-      console.log('Player joined:', payload);
-    });
-
-    channel.on('game_started', (payload) => {
-      // Handle game start
-      console.log('Game started:', payload);
-    });
-
-    channel.on('new_submission', (payload) => {
-      // Handle new submission
-      console.log('New submission:', payload);
-    });
-
-    channel.on('game_ended', (payload) => {
-      // Handle game end
-      console.log('Game ended:', payload);
-    });
-  },
-
-  leaveGroup: () => {
-    const { channel } = get();
-    if (channel) {
-      channel.leave();
-      set({ channel: null, groupName: null });
-    }
-  },
-
-  sendEvent: async (event: string, payload: any) => {
-    const { channel } = get();
-    if (!channel) throw new Error('Not in a group');
-
-    return new Promise((resolve, reject) => {
-      channel.push(event, payload)
-        .receive('ok', resolve)
-        .receive('error', reject);
-    });
-  },
-}));
+));
 
 // Types for game events
 export interface GameStartedPayload {

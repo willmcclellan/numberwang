@@ -59,7 +59,7 @@ const Home = () => {
     try {
       await connect(playerName);
       await joinGroup(groupId);
-      navigate('/letters'); // Or wherever you want to redirect after joining
+      navigate(`/${groupId}`); 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join group');
     } finally {
