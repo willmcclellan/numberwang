@@ -14,8 +14,11 @@ defmodule CountdownApi.Application do
       {Phoenix.PubSub, name: CountdownApi.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: CountdownApi.Finch},
-      # Start a worker by calling: CountdownApi.Worker.start_link(arg)
-      # {CountdownApi.Worker, arg},
+      # Start Registry and GameSupervisor (before services that need them)
+      {Registry, keys: :unique, name: CountdownApi.GameRegistry},
+      {DynamicSupervisor, name: CountdownApi.GameSupervisor, strategy: :one_for_one},
+      # Start the Dictionary Service
+      CountdownApi.Dictionary,
       # Start to serve requests, typically the last entry
       CountdownApiWeb.Endpoint
     ]
