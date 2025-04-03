@@ -7,10 +7,6 @@ defmodule CountdownApiWeb.Integration.GameFlowTest do
   import Ecto.Query
 
   setup do
-    start_supervised!({Registry, keys: :unique, name: CountdownApi.GameRegistry}) 
-    start_supervised!({DynamicSupervisor, name: CountdownApi.GameSupervisor, strategy: :one_for_one})
-    start_supervised!(CountdownApi.Dictionary)
-
     # Connect two player sockets
     {:ok, socket1} = connect(CountdownApiWeb.UserSocket, %{"player_name" => "Player1"})
     {:ok, socket2} = connect(CountdownApiWeb.UserSocket, %{"player_name" => "Player2"})

@@ -5,10 +5,6 @@ defmodule CountdownApiWeb.GroupChannelTest do
   alias CountdownApi.Schemas.{Submission}
 
   setup do
-    start_supervised!({Registry, keys: :unique, name: CountdownApi.GameRegistry}) 
-    start_supervised!({DynamicSupervisor, name: CountdownApi.GameSupervisor, strategy: :one_for_one})
-    start_supervised!(CountdownApi.Dictionary)
-
     # Create a test group for our tests
     {:ok, group} = Groups.create_group(%{name: "TestGroup"})
     {:ok, player} = Groups.create_player(%{name: "TestPlayer", group_id: group.id})
