@@ -11,13 +11,17 @@ defmodule CountdownApi.GameServer do
 
   @pubsub CountdownApi.PubSub
   # 5 minutes timeout for inactive games
-  @timeout 60_000 * 5
+  @timeout 60_000 * 15
   @timeout_multiplier if Mix.env() == :test, do: 0.1, else: 1
 
   # Client API
 
   def start_link(game_id) do
     GenServer.start_link(__MODULE__, game_id, name: via_tuple(game_id))
+  end
+
+  def start_game(game_id) do
+    GenServer.call(via_tuple(game_id), :start_game)
   end
 
   def submit(game_id, player_id, value) do
@@ -49,14 +53,17 @@ defmodule CountdownApi.GameServer do
     Process.send_after(self(), :end_game, game_duration)
 
     {:ok, %{game: game, submissions: []}, @timeout}
+  end
 
+  @impl true
+  def handle_call(:start_game, _from, %{game: game} = state) do
     # Update game with start time
     {:ok, game} = update_game(game, %{started_at: DateTime.utc_now()})
 
     # Broadcast game start
     broadcast(game, "game_started", %{game: game_to_map(game)})
 
-    {:ok, %{game: game, submissions: []}, @timeout}
+    {:reply, { :ok }, state, @timeout}
   end
 
   @impl true
@@ -100,7 +107,8 @@ defmodule CountdownApi.GameServer do
   @impl true
   def handle_call(:end_game, _from, state) do
     # Timeout of 0 will stop the process after reply
-    {:reply, :ok, state, 0}
+    # TODO come back here an increase this if I want to add latest answer support
+    {:reply, :ok, state, @timeout}
   end
 
   @impl true

@@ -60,6 +60,16 @@ defmodule CountdownApi.GameManager do
   end
 
   @doc """
+  Start a game
+  """
+  def start_game(game_id) do
+    case ensure_game_server(game_id) do
+      {:ok, _pid} -> GameServer.start_game(game_id)
+      {:error, _} = error -> error
+    end
+  end
+
+  @doc """
   Submit a value to a running game.
   """
   def submit_value(game_id, player_id, value) do

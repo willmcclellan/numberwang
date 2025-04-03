@@ -35,14 +35,18 @@ defmodule CountdownApiWeb.Integration.GameFlowTest do
     ref = push(socket1, "create_letters_game", %{"duration" => 30})
     assert_reply ref, :ok, %{game_id: game_id}
 
+    # any player starts the game
+    ref = push(socket1, "start_game", %{"game_id" => game_id})
+    assert_reply ref, :ok
+
     # Both players should receive the game_started event
     assert_broadcast "game_started", %{game: _game_data}, 4000
 
     # Both players submit answers
-    ref1 = push(socket1, "submit_answer", %{"game_id" => game_id, "value" => "CAT"})
-    assert_reply ref1, :ok, %{submission_id: _submission_id1}
-    ref2 = push(socket2, "submit_answer", %{"game_id" => game_id, "value" => "HAT"})
-    assert_reply ref2, :ok, %{submission_id: _submission_id2}
+    ref = push(socket1, "submit_answer", %{"game_id" => game_id, "value" => "CAT"})
+    assert_reply ref, :ok, %{submission_id: _submission_id1}
+    ref = push(socket2, "submit_answer", %{"game_id" => game_id, "value" => "HAT"})
+    assert_reply ref, :ok, %{submission_id: _submission_id2}
 
     # Both should receive submission broadcasts
     assert_broadcast "new_submission", %{value: "CAT"}, 1000

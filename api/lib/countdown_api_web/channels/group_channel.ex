@@ -125,6 +125,16 @@ defmodule CountdownApiWeb.GroupChannel do
     end
   end
 
+  def handle_in("start_game", %{"game_id" => game_id}, socket) do
+    case GameManager.start_game(game_id) do
+      {:ok} ->
+        {:reply, :ok, socket}
+
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
   def handle_in("submit_answer", %{"game_id" => game_id, "value" => value}, socket) do
     player_id = socket.assigns.player_id
 

@@ -79,6 +79,9 @@ defmodule CountdownApiWeb.GroupChannelTest do
       assert game.duration == 30
       assert length(game.letters) == 9
 
+      ref = push(socket, "start_game", %{"game_id" => game_id})
+      assert_reply ref, :ok
+
       # Check for game_started broadcast
       assert_broadcast "game_started", %{game: game_data}, 4000
       assert game_data.id == game_id
@@ -99,6 +102,9 @@ defmodule CountdownApiWeb.GroupChannelTest do
       assert game.large_number_count == 2
       assert length(game.numbers) == 6
       assert is_integer(game.target)
+
+      ref = push(socket, "start_game", %{"game_id" => game_id})
+      assert_reply ref, :ok
 
       # Check for game_started broadcast
       assert_broadcast "game_started", %{game: game_data}, 4000
