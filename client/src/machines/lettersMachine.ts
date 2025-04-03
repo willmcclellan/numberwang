@@ -34,6 +34,7 @@ const CONSONANTS = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 
 
 export const lettersMachine = createMachine({
   id: 'letters',
+  initial: 'selecting',
   context: {
     letters: [],
     players: [],
@@ -43,14 +44,26 @@ export const lettersMachine = createMachine({
     showWordLengths: false,
     showPossibleWords: false,
   } as LettersContext,
-  initial: 'selecting',
   states: {
     selecting: {
+      initial: 'waiting',
+      states: {
+        waiting: {},
+        checkLetters: {
+          always: [
+            {
+              guard: ({ context }) => context.letters.length === 9,
+              target: '#letters.playing',
+            },
+            { target: 'waiting' }
+          ]
+        }
+      },
       on: {
         ADD_VOWEL: {
-          guard: (context) => context.letters.length < 9,
+          guard: ({ context }) => context.letters.length < 9,
           actions: assign({
-            letters: (context) => [
+            letters: ({ context }) => [
               ...context.letters,
               VOWELS[Math.floor(Math.random() * VOWELS.length)]
             ]
@@ -58,9 +71,9 @@ export const lettersMachine = createMachine({
           target: '.checkLetters'
         },
         ADD_CONSONANT: {
-          guard: (context) => context.letters.length < 9,
+          guard: ({ context }) => context.letters.length < 9,
           actions: assign({
-            letters: (context) => [
+            letters: ({ context }) => [
               ...context.letters,
               CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)]
             ]
@@ -87,21 +100,8 @@ export const lettersMachine = createMachine({
         },
         SET_DURATION: {
           actions: assign({
-            gameDuration: (_, event) => event.duration
+            gameDuration: ({ event }) => event.duration
           })
-        }
-      },
-      initial: 'waiting',
-      states: {
-        waiting: {},
-        checkLetters: {
-          always: [
-            {
-              guard: (context) => context.letters.length === 9,
-              target: '#letters.playing'
-            },
-            { target: 'waiting' }
-          ]
         }
       }
     },
@@ -114,17 +114,17 @@ export const lettersMachine = createMachine({
       on: {
         TOGGLE_WORD_LENGTHS: {
           actions: assign({
-            showWordLengths: (context) => !context.showWordLengths
+            showWordLengths: ({ context }) => !context.showWordLengths
           })
         },
         TOGGLE_POSSIBLE_WORDS: {
           actions: assign({
-            showPossibleWords: (context) => !context.showPossibleWords
+            showPossibleWords: ({ context }) => !context.showPossibleWords
           })
         },
         TOGGLE_PLAYER_WORD: {
           actions: assign({
-            players: (context, event) => context.players.map(player =>
+            players: ({ context, event }) => context.players.map(player =>
               player.id === event.playerId
                 ? { ...player, word: player.word ? undefined : 'EXAMPLE' }
                 : player
@@ -142,12 +142,5 @@ export const lettersMachine = createMachine({
         }
       }
     }
-  }
-}, {
-  actions: {
-    // Define any additional actions here
-  },
-  guards: {
-    // Define any additional guards here
   }
 });
