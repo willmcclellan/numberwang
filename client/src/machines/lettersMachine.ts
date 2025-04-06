@@ -1,9 +1,9 @@
-import { createMachine, assign, log } from 'xstate';
+import { createMachine, assign, enqueueActions, log } from 'xstate';
 
 export interface LettersContext {
   letters: string[];
   players: Player[];
-  guesses: string[];
+  submissions: string[];
   wordLengthDistribution: Record<number, number>;
   possibleWords: string[];
   gameDuration: number;
@@ -28,6 +28,7 @@ type LettersEvent =
   | { type: 'TOGGLE_POSSIBLE_WORDS' }
   | { type: 'TOGGLE_PLAYER_WORD'; playerId: string }
   | { type: 'SET_DURATION'; duration: number }
+  | { type: 'SUBMIT'; submissions: string[] }
   | { type: 'RESET' };
 
 const VOWELS = ['A', 'E', 'I', 'O', 'U'];
@@ -39,7 +40,7 @@ export const lettersMachine = createMachine({
   context: {
     letters: [],
     players: [],
-    guesses: [],
+    submissions: [],
     wordLengthDistribution: {},
     possibleWords: [],
     gameDuration: 30,
@@ -117,10 +118,24 @@ export const lettersMachine = createMachine({
     },
     playing: {
       entry: [log('Game started')],
-      // TODO this might need two phases, one to trigger the startGame event
-      // and two to wait for the websocket response until actually starting
-      // the clock? 
       on: {
+        SUBMIT: {
+          actions: enqueueActions(({ context, event, enqueue }) => {
+            const prevSubmissions = context.submissions;
+            const nextSubmissions = event.submissions;
+            // diff the prev submissions with the new ones
+            const newSubmissions = nextSubmissions.filter(submission => !prevSubmissions.includes(submission));
+
+            enqueue(assign({
+              submissions: ({ context }) => [...context.submissions, ...newSubmissions]
+            }));
+
+            for (const newSubmission of newSubmissions) {
+              // TODO send the new submission to the server
+              enqueue(log(`New submission: ${newSubmission}`));
+            }
+          }),
+        },
         TIMER_COMPLETE: 'completed'
       }
     },

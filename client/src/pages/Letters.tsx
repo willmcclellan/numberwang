@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Shuffle, Eye, EyeOff } from 'lucide-react';
+import { useDebounce } from 'react-use'
 import { useMachine } from '@xstate/react';
 import { lettersMachine } from '../machines/lettersMachine';
 import AnalogClock from '../components/AnalogClock';
@@ -8,6 +9,7 @@ import { useWebSocket } from "../lib/websocket";
 
 const Letters = () => {
   const gameId = window.location.pathname.split('/')[3];
+  const [submissions, setSubmissions] = useState<string[]>([]);
   const { _channel: channel, sendEvent } = useWebSocket();
   const [state, send] = useMachine(
     lettersMachine.provide({
@@ -26,6 +28,16 @@ const Letters = () => {
       });
     }
   }, [channel, send]);
+
+  const handleSubmissionsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    // parse textarea value as space-separated or line-break words
+    const submissions = e.target.value.split(/\s+/).filter(word => word.trim() !== '');
+    setSubmissions(submissions);
+  }
+
+  useDebounce(() => {
+    send({ type: 'SUBMIT', submissions });
+  }, 300, [submissions]);
 
   const { 
     letters, 
@@ -103,7 +115,7 @@ const Letters = () => {
             <textarea
               className="w-full h-32 mt-4 p-2 border rounded-md font-medium"
               placeholder="Type your word here..."
-              onChange={(e) => send({ type: 'SET_PLAYER_WORD', value: e.target.value })}/>
+              onChange={handleSubmissionsChange}/>
           </div>
         )}
       </div>
