@@ -7,7 +7,9 @@ interface WebSocketStore {
   _channel: Channel | null;
   connected: boolean;
   playerName: string | null;
+  groupId: number | null;
   groupName: string | null;
+  games: Record<string, any>; // TODO Replace with actual game type
   connect: (playerName: string) => Promise<void>;
   disconnect: () => void;
   joinGroup: (groupName: string) => Promise<void>;
@@ -23,7 +25,9 @@ export const useWebSocket = create<WebSocketStore>()(persist(
     _channel: null,
     connected: false,
     playerName: null,
+    groupId: null,
     groupName: null,
+    games: {},
 
     connect: async (playerName: string) => {
       const socket = new Socket(SOCKET_URL, {
@@ -44,24 +48,27 @@ export const useWebSocket = create<WebSocketStore>()(persist(
 
     disconnect: () => {
       const { _socket: socket } = get();
+      console.debug('Disconnecting from socket');
       if (socket) {
         socket.disconnect();
-        set({ _socket: null, _channel: null, connected: false, playerName: null, groupName: null });
       }
+
+      set({ _socket: null, _channel: null, connected: false, playerName: null, groupId: null, groupName: null });
     },
 
-    joinGroup: async (groupName: string) => {
+    joinGroup: async (groupId: string) => {
       const { _socket: socket } = get();
       if (!socket) throw new Error('Not connected');
 
-      const channel = socket.channel(`group:${groupName}`, {
-        player_name: get().playerName
+      const channel = socket.channel(`group:${groupId}`, {
+        player_name: get().playerName,
       });
 
       await new Promise((resolve, reject) => {
         channel.join()
           .receive('ok', (response) => {
-            set({ _channel: channel, groupName });
+            console.debug('Joined group:', response);
+            set({ _channel: channel, groupName: response.group.name, groupId: response.group.id });
             resolve(response);
           })
           .receive('error', (error) => reject(error));
@@ -76,6 +83,13 @@ export const useWebSocket = create<WebSocketStore>()(persist(
       channel.on('player_joined', (payload) => {
         // Handle new player
         console.log('Player joined:', payload);
+      });
+
+      channel.on('game_created', (payload) => {
+        // Handle game create
+        const { games } = get();
+        games[payload.game.id] = payload.game;
+        set({ games });
       });
 
       channel.on('game_started', (payload) => {
@@ -98,11 +112,12 @@ export const useWebSocket = create<WebSocketStore>()(persist(
       const { _channel: channel } = get();
       if (channel) {
         channel.leave();
-        set({ _channel: null, groupName: null });
+        set({ _channel: null, groupId: null, groupName: null });
       }
     },
 
     sendEvent: async (event: string, payload: any) => {
+      console.debug('Sending event:', event, payload);
       const { _channel: channel } = get();
       if (!channel) throw new Error('Not in a group');
 

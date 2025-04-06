@@ -1,8 +1,9 @@
-import { createMachine, assign } from 'xstate';
+import { createMachine, assign, log } from 'xstate';
 
 export interface LettersContext {
   letters: string[];
   players: Player[];
+  guesses: string[];
   wordLengthDistribution: Record<number, number>;
   possibleWords: string[];
   gameDuration: number;
@@ -21,7 +22,7 @@ type LettersEvent =
   | { type: 'ADD_VOWEL' }
   | { type: 'ADD_CONSONANT' }
   | { type: 'RANDOM_FILL' }
-  | { type: 'START_GAME' }
+  | { type: 'STARTED_GAME' }
   | { type: 'TIMER_COMPLETE' }
   | { type: 'TOGGLE_WORD_LENGTHS' }
   | { type: 'TOGGLE_POSSIBLE_WORDS' }
@@ -38,6 +39,7 @@ export const lettersMachine = createMachine({
   context: {
     letters: [],
     players: [],
+    guesses: [],
     wordLengthDistribution: {},
     possibleWords: [],
     gameDuration: 30,
@@ -53,7 +55,7 @@ export const lettersMachine = createMachine({
           always: [
             {
               guard: ({ context }) => context.letters.length === 9,
-              target: '#letters.playing',
+              target: '#letters.ready',
             },
             { target: 'waiting' }
           ]
@@ -96,7 +98,7 @@ export const lettersMachine = createMachine({
               return letters.sort(() => Math.random() - 0.5);
             }
           }),
-          target: 'playing'
+          target: 'ready'
         },
         SET_DURATION: {
           actions: assign({
@@ -105,12 +107,25 @@ export const lettersMachine = createMachine({
         }
       }
     },
+    ready: {
+      entry: ['startGame', log('Game ready')],
+      on: {
+        STARTED_GAME: {
+          target: 'playing',
+        }
+      }
+    },
     playing: {
+      entry: [log('Game started')],
+      // TODO this might need two phases, one to trigger the startGame event
+      // and two to wait for the websocket response until actually starting
+      // the clock? 
       on: {
         TIMER_COMPLETE: 'completed'
       }
     },
     completed: {
+      entry: [log('Game completed')],
       on: {
         TOGGLE_WORD_LENGTHS: {
           actions: assign({

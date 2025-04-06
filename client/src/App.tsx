@@ -16,10 +16,10 @@ function App() {
         <div className="container mx-auto px-4">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/:groupName" element={<Group />} />
-            <Route path="/:groupName/letters/:gameId" element={<Letters />} />
-            <Route path="/:groupName/numbers/:gameId" element={<Numbers />} />
-            <Route path="/:groupName/conundrum/:gameId" element={<Conundrum />} />
+            <Route path="/:groupId" element={<Group />} />
+            <Route path="/:groupId/letters/:gameId" element={<Letters />} />
+            <Route path="/:groupId/numbers/:gameId" element={<Numbers />} />
+            <Route path="/:groupId/conundrum/:gameId" element={<Conundrum />} />
           </Routes>
         </div>
       </div>

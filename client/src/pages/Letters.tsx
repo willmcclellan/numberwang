@@ -1,11 +1,32 @@
-import React from 'react';
-import { Timer, Shuffle, Eye, EyeOff } from 'lucide-react';
+import { useEffect } from 'react';
+import { Shuffle, Eye, EyeOff } from 'lucide-react';
 import { useMachine } from '@xstate/react';
 import { lettersMachine } from '../machines/lettersMachine';
 import AnalogClock from '../components/AnalogClock';
+import Toggle from '../components/Toggle';
+import { useWebSocket } from "../lib/websocket";
 
 const Letters = () => {
-  const [state, send] = useMachine(lettersMachine);
+  const gameId = window.location.pathname.split('/')[3];
+  const { _channel: channel, sendEvent } = useWebSocket();
+  const [state, send] = useMachine(
+    lettersMachine.provide({
+      actions: {
+        startGame: () => {
+          sendEvent('start_game', { game_id: gameId })
+        }
+      },
+    })
+  );
+
+  useEffect(() => {
+    if (channel) {
+      channel.on('game_started', (payload) => {
+        send({ type: 'STARTED_GAME' });
+      });
+    }
+  }, [channel, send]);
+
   const { 
     letters, 
     gameDuration, 
@@ -18,31 +39,8 @@ const Letters = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800">Letters Round</h1>
-        <div className="flex items-center space-x-4">
-          <select
-            value={gameDuration}
-            onChange={(e) => send({ type: 'SET_DURATION', duration: Number(e.target.value) })}
-            className="p-2 border rounded-md"
-            disabled={!state.matches('selecting')}
-          >
-            <option value={30}>30 seconds</option>
-            <option value={60}>60 seconds</option>
-          </select>
-          {state.matches('selecting') && (
-            <button
-              onClick={() => send({ type: 'RANDOM_FILL' })}
-              className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              <Shuffle className="w-4 h-4" />
-              <span>Random Fill</span>
-            </button>
-          )}
-        </div>
-      </div>
-
       <div className="bg-white p-8 rounded-lg shadow-md">
+        <h1 className="text-3xl font-bold text-gray-800 mb-8">Letters Round</h1>
         <div className="grid grid-cols-9 gap-4 mb-8">
           {letters.map((letter, index) => (
             <div
@@ -61,29 +59,51 @@ const Letters = () => {
         </div>
 
         {state.matches('selecting') && letters.length < 9 && (
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={() => send({ type: 'ADD_VOWEL' })}
-              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
-            >
-              Vowel
-            </button>
-            <button
-              onClick={() => send({ type: 'ADD_CONSONANT' })}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-            >
-              Consonant
-            </button>
-          </div>
+          <>
+            <div className="flex justify-center h-16 space-x-4">
+              <Toggle
+                checked={gameDuration === 60}
+                onChange={(checked) => send({ type: 'SET_DURATION', duration: checked ? 60 : 30 })}
+                leftLabel="30s"
+                rightLabel="60s"
+                disabled={!state.matches('selecting')}
+              />
+            </div>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => send({ type: 'RANDOM_FILL' })}
+                className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                <Shuffle className="w-4 h-4" />
+                <span>Random Fill</span>
+              </button>
+              <button
+                onClick={() => send({ type: 'ADD_VOWEL' })}
+                className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
+              >
+                Vowel
+              </button>
+              <button
+                onClick={() => send({ type: 'ADD_CONSONANT' })}
+                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+              >
+                Consonant
+              </button>
+            </div>
+          </>
         )}
 
         {state.matches('playing') && (
-          <div className="flex justify-center">
+          <div className="flex justify-center flex-col items-center">
             <AnalogClock
               duration={gameDuration}
               isRunning={true}
               onComplete={() => send({ type: 'TIMER_COMPLETE' })}
             />
+            <textarea
+              className="w-full h-32 mt-4 p-2 border rounded-md font-medium"
+              placeholder="Type your word here..."
+              onChange={(e) => send({ type: 'SET_PLAYER_WORD', value: e.target.value })}/>
           </div>
         )}
       </div>

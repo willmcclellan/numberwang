@@ -9,14 +9,15 @@ const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const navigate = useNavigate();
-  const { connect, disconnect, joinGroup, connected, groupName } = useWebSocket();
+  const { connect, disconnect, joinGroup, leaveGroup, connected, groupName } = useWebSocket();
 
+  // TODO do we need this?
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, [disconnect]);
+  //useEffect(() => {
+  //  return () => {
+  //    disconnect();
+  //  };
+  //}, [disconnect]);
 
   const handleCreateGroup = async () => {
     if (!playerName.trim()) {
@@ -29,10 +30,10 @@ const Home = () => {
 
     try {
       await connect(playerName);
-      // Generate a random group name if needed
-      const newGroupName = `group-${Math.random().toString(36).substring(2, 8)}`;
-      await joinGroup(newGroupName);
-      navigate('/letters'); // Or wherever you want to redirect after group creation
+      const parsedGroupId = groupId.trim().toLowerCase().replace(/\s+/g, '-');
+
+      await joinGroup(parsedGroupId);
+      navigate(`/${parsedGroupId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create group');
     } finally {
@@ -55,7 +56,7 @@ const Home = () => {
 
     setError(null);
     setIsConnecting(true);
-
+    
     try {
       await connect(playerName);
       await joinGroup(groupId);
@@ -111,7 +112,7 @@ const Home = () => {
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex items-center space-x-2 mb-4">
             <Users className="h-6 w-6 text-green-600" />
-            <h2 className="text-xl font-semibold">Join a Group</h2>
+            <h2 className="text-xl font-semibold">Create or Join a Group</h2>
           </div>
           <form onSubmit={handleJoinGroup}>
             <input
@@ -135,7 +136,7 @@ const Home = () => {
 
       {connected && groupName && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md">
-          Connected to group: {groupName}
+          Connected to group: {groupName} <button onClick={leaveGroup} className="text-blue-600 hover:underline">Leave Group</button>
         </div>
       )}
     </div>

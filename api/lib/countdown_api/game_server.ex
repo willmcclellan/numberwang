@@ -52,6 +52,9 @@ defmodule CountdownApi.GameServer do
     # NOTE multiplier used to help tests run faster
     Process.send_after(self(), :end_game, game_duration)
 
+    # Broadcast game created
+    broadcast(game, "game_created", %{game: game_to_map(game)})
+
     {:ok, %{game: game, submissions: []}, @timeout}
   end
 
@@ -176,6 +179,7 @@ defmodule CountdownApi.GameServer do
 
   defp broadcast(game, event, payload) do
     topic = "group:#{game.group_id}"
+    IO.puts("Broadcasting to topic: #{topic} with event: #{event} and payload: #{inspect(payload)}")
     PubSub.broadcast(@pubsub, topic, %Phoenix.Socket.Broadcast{
       topic: topic,
       event: event,

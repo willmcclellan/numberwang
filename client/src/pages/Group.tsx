@@ -16,10 +16,11 @@ const Group = () => {
 
   const navigate = useNavigate();
   const { connect, joinGroup, sendEvent } = useWebSocket();
-  const { playerName, groupName, socket } = useWebSocket(store => ({
+  const { playerName, groupName, socket, channel } = useWebSocket(store => ({
+    socket: store._socket,
+    channel: store._channel,
     playerName: store.playerName,
     groupName: store.groupName,
-    socket: store._socket
   }))
 
   const handleConnect = async (playerName: string) => {
@@ -28,10 +29,10 @@ const Group = () => {
 
   useEffect(() => {
     if (!socket && playerName) {
-      console.debug('Connecting to WebSocket');
+      console.debug('Connecting to WebSocket', { playerName });
       handleConnect(playerName)
-    } else if (playerName) {
-      console.debug('Joining group');
+    } else if (!channel && playerName) {
+      console.debug('Joining group', urlGroup);
       joinGroup(urlGroup)
     }
   }, [playerName, groupName, socket]);
@@ -46,8 +47,8 @@ const Group = () => {
 
   const startGame = async (gameType: 'letters' | 'numbers' | 'conundrum') => {
     try {
+      // TODO this needs duration removing and moving to start game
       const response = await sendEvent(`create_${gameType}_game`, { duration: 30 });
-      console.debug('Game started:', response);
       navigate(`/${groupName}/${gameType}/${response.game_id}`);
     } catch (error) {
       console.error('Failed to start game:', error);
