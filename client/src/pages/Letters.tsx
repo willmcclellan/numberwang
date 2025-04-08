@@ -16,6 +16,13 @@ const Letters = () => {
       actions: {
         startGame: () => {
           sendEvent('start_game', { game_id: gameId })
+        },
+        sendSubmission: (_, params: unknown) => {
+          const submissionParams = params as { submission: string };
+          sendEvent('submit_answer', {
+            game_id: gameId,
+            value: submissionParams,
+          })
         }
       },
     })
@@ -23,7 +30,7 @@ const Letters = () => {
 
   useEffect(() => {
     if (channel) {
-      channel.on('game_started', (payload) => {
+      channel.on('game_started', () => {
         send({ type: 'STARTED_GAME' });
       });
     }

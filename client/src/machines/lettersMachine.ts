@@ -18,7 +18,7 @@ interface Player {
   word?: string;
 }
 
-type LettersEvent =
+export type LettersEvent =
   | { type: 'ADD_VOWEL' }
   | { type: 'ADD_CONSONANT' }
   | { type: 'RANDOM_FILL' }
@@ -35,6 +35,10 @@ const VOWELS = ['A', 'E', 'I', 'O', 'U'];
 const CONSONANTS = ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'];
 
 export const lettersMachine = createMachine({
+  types: {} as {
+    context: LettersContext;
+    events: LettersEvent;
+  },
   id: 'letters',
   initial: 'selecting',
   context: {
@@ -46,7 +50,7 @@ export const lettersMachine = createMachine({
     gameDuration: 30,
     showWordLengths: false,
     showPossibleWords: false,
-  } as LettersContext,
+  },
   states: {
     selecting: {
       initial: 'waiting',
@@ -131,8 +135,10 @@ export const lettersMachine = createMachine({
             }));
 
             for (const newSubmission of newSubmissions) {
-              // TODO send the new submission to the server
               enqueue(log(`New submission: ${newSubmission}`));
+              enqueue({ type: 'sendSubmission', params: { 
+                submission: newSubmission,
+              } });
             }
           }),
         },

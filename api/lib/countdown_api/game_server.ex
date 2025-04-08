@@ -81,7 +81,7 @@ defmodule CountdownApi.GameServer do
       player_id: player_id,
       value: value,
       # Initial validation, will be updated at game end
-      valid: initial_validation(game, value),
+      valid: validate_word_letters(game, value) and initial_validation(game, value),
       score: calculate_score(game, value)
     }
 
@@ -148,7 +148,7 @@ defmodule CountdownApi.GameServer do
 
 
     # Validate all submissions and update them
-    validate_all_submissions(game, submissions)
+    # validate_all_submissions(game, submissions)
 
     # Broadcast game end
     broadcast(game, "game_ended", %{
@@ -197,6 +197,15 @@ defmodule CountdownApi.GameServer do
     end
   end
 
+  defp validate_word_letters(game, value) do
+    game_letters = String.graphemes(game.letters)
+    word_letters = String.graphemes(value)
+
+    Enum.all?(word_letters, fn letter ->
+      Enum.count(word_letters, &(&1 == letter)) <= Enum.count(game_letters, &(&1 == letter))
+    end)
+  end
+
   # Calculate scoring
   defp calculate_score(game, value) do
     case game.game_type do
@@ -224,14 +233,15 @@ defmodule CountdownApi.GameServer do
     end
   end
 
+  # TODO do we need this?
   # Final validation at game end
-  defp validate_all_submissions(_game, submissions) do
-    # Implement more thorough validation if needed
-    # For example, checking that letters are actually available in the game
-    Enum.each(submissions, fn submission ->
-      Repo.update(Submission.changeset(submission, %{}))
-    end)
-  end
+  # defp validate_all_submissions(_game, submissions) do
+  #   # Implement more thorough validation if needed
+  #   # For example, checking that letters are actually available in the game
+  #   Enum.each(submissions, fn submission ->
+  #     Repo.update(Submission.changeset(submission, %{}))
+  #   end)
+  # end
 
   # Get final game results
   defp get_game_results(game) do
