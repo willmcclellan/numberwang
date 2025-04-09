@@ -119,12 +119,14 @@ const Letters = () => {
               isRunning={true}
               onComplete={() => send({ type: 'TIMER_COMPLETE' })}
             />
-            <textarea
-              className="w-full h-32 mt-4 p-2 border rounded-md font-medium"
-              placeholder="Type your word here..."
-              onChange={handleSubmissionsChange}/>
           </div>
         )}
+        <textarea
+          className="w-full h-48 mt-4 p-2 border rounded-md font-medium text-lg"
+          disabled={!state.matches('playing')}
+          placeholder="Type your words here..."
+          onChange={handleSubmissionsChange}
+        />
       </div>
 
       {state.matches('completed') && (
