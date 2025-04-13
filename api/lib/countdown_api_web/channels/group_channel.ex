@@ -82,10 +82,10 @@ defmodule CountdownApiWeb.GroupChannel do
   @doc """
   Handle client events for creating and interacting with games.
   """
-  def handle_in("create_letters_game", %{"duration" => duration}, socket) do
+  def handle_in("create_letters_game", _, socket) do
     group_id = socket.assigns.group_id
 
-    case GameManager.create_letters_game(group_id, duration) do
+    case GameManager.create_letters_game(group_id) do
       {:ok, game} ->
         {:reply, {:ok, %{game_id: game.id}}, socket}
 
@@ -95,6 +95,7 @@ defmodule CountdownApiWeb.GroupChannel do
     end
   end
 
+  # TODO move numbers arguments to start game
   def handle_in(
         "create_numbers_game",
         %{"duration" => duration, "large_count" => large_count},
@@ -125,8 +126,8 @@ defmodule CountdownApiWeb.GroupChannel do
     end
   end
 
-  def handle_in("start_game", %{"game_id" => game_id}, socket) do
-    case GameManager.start_game(game_id) do
+  def handle_in("start_game", %{"game_id" => game_id, "options" => options}, socket) do
+    case GameManager.start_game(game_id, options) do
       {:ok} ->
         {:reply, :ok, socket}
 
@@ -137,6 +138,8 @@ defmodule CountdownApiWeb.GroupChannel do
 
   def handle_in("submit_answer", %{"game_id" => game_id, "value" => value}, socket) do
     player_id = socket.assigns.player_id
+
+    IO.puts("value: #{inspect(value)}")
 
     case GameManager.submit_value(game_id, player_id, value) do
       {:ok, submission} ->
@@ -160,6 +163,7 @@ defmodule CountdownApiWeb.GroupChannel do
   def handle_in("get_game_results", %{"game_id" => game_id}, socket) do
     case GameManager.get_game_results(game_id) do
       {:ok, results} ->
+        IO.puts("get_game_results: #{inspect(results)}")
         {:reply, {:ok, %{results: results}}, socket}
 
       {:error, reason} ->
@@ -178,8 +182,10 @@ defmodule CountdownApiWeb.GroupChannel do
   end
 
   def handle_in("get_all_words", %{"game_id" => game_id}, socket) do
+    IO.puts("get_all_words: #{inspect(game_id)}")
     case GameManager.get_game_results(game_id) do
       {:ok, %{all_words: words}} ->
+        IO.puts("all_words: #{inspect(words)}")
         {:reply, {:ok, %{words: words}}, socket}
 
       _ ->

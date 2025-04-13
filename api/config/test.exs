@@ -23,6 +23,9 @@ config :countdown_api, CountdownApiWeb.Endpoint,
 # In test we don't send emails
 config :countdown_api, CountdownApi.Mailer, adapter: Swoosh.Adapters.Test
 
+# Mock the dictionary API
+config :countdown_api, dictionary: CountdownApi.MockDictionary
+
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 

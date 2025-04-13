@@ -49,7 +49,6 @@ defmodule CountdownApi.Schemas.Game do
     case game_type do
       "letters" ->
         changeset
-        |> validate_required([:letters])
         |> validate_length(:letters, is: 9)
 
       "numbers" ->

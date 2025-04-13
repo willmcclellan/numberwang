@@ -10,15 +10,10 @@ defmodule CountdownApi.GameManager do
   @doc """
   Create a new letters game.
   """
-  def create_letters_game(group_id, duration \\ 30) do
-    # Generate random letters with a good mix of vowels and consonants
-    letters = generate_letters()
-
+  def create_letters_game(group_id) do
     attrs = %{
       group_id: group_id,
       game_type: "letters",
-      duration: duration,
-      letters: letters
     }
 
     create_game(attrs)
@@ -62,9 +57,9 @@ defmodule CountdownApi.GameManager do
   @doc """
   Start a game
   """
-  def start_game(game_id) do
+  def start_game(game_id, options) do
     case ensure_game_server(game_id) do
-      {:ok, _pid} -> GameServer.start_game(game_id)
+      {:ok, _pid} -> GameServer.start_game(game_id, options)
       {:error, _} = error -> error
     end
   end
@@ -104,6 +99,7 @@ defmodule CountdownApi.GameManager do
   Get game results (available words, solutions, etc.)
   """
   def get_game_results(game_id) do
+    IO.puts("Getting game results for game_id: #{game_id}")
     case ensure_game_server(game_id) do
       {:ok, _pid} -> GameServer.get_results(game_id)
       {:error, _} = error -> error
@@ -148,8 +144,22 @@ defmodule CountdownApi.GameManager do
 
   defp ensure_game_server(game_id) do
     case Registry.lookup(CountdownApi.GameRegistry, game_id) do
-      [{pid, _}] -> {:ok, pid}
-      [] -> start_game_server(game_id)
+      [{pid, _}] ->
+        IO.puts("Found existing game server for game_id: #{game_id}")
+        # Check if the game has ended
+        case GenServer.call(pid, :game_status) do
+          {:game_ended, _} ->
+            IO.puts("Game has ended, game_id: #{game_id}")
+            {:ok, pid}
+          _ -> 
+            # Game is still active
+            IO.puts("Game is still active, using existing server for game_id: #{game_id}")
+            {:ok, pid}
+        end
+      [] -> 
+        IO.puts("No existing game server found for game_id: #{game_id}")
+        # No existing game server, start a new one
+        start_game_server(game_id)
     end
   end
 
@@ -162,47 +172,6 @@ defmodule CountdownApi.GameManager do
       {:error, {:already_started, pid}} -> {:ok, pid}
       error -> error
     end
-  end
-
-  # Letter generation for letters games
-  defp generate_letters do
-    vowels = ["A", "E", "I", "O", "U"]
-
-    consonants = [
-      "B",
-      "C",
-      "D",
-      "F",
-      "G",
-      "H",
-      "J",
-      "K",
-      "L",
-      "M",
-      "N",
-      "P",
-      "Q",
-      "R",
-      "S",
-      "T",
-      "V",
-      "W",
-      "X",
-      "Y",
-      "Z"
-    ]
-
-    # Get 3-5 vowels
-    vowel_count = Enum.random(3..5)
-    selected_vowels = Enum.take_random(vowels, vowel_count)
-
-    # Get 4-6 consonants
-    consonant_count = 9 - vowel_count
-    selected_consonants = Enum.take_random(consonants, consonant_count)
-
-    # Mix them together
-    (selected_vowels ++ selected_consonants)
-    |> Enum.shuffle()
   end
 
   # TODO implement this

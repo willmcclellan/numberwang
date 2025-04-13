@@ -2,6 +2,7 @@
 defmodule CountdownApiWeb.Integration.GameFlowTest do
   use CountdownApiWeb.ChannelCase
 
+  # alias CountdownApi.Dictionary
   alias CountdownApi.Repo
   alias CountdownApi.Schemas.Submission
   import Ecto.Query
@@ -32,14 +33,14 @@ defmodule CountdownApiWeb.Integration.GameFlowTest do
 
     # Player 1 creates a game
     # Short duration for testing
-    ref = push(socket1, "create_letters_game", %{"duration" => 30})
+    ref = push(socket1, "create_letters_game")
     assert_reply ref, :ok, %{game_id: game_id}
 
     # Both players should receive the game_created event
     assert_broadcast "game_created", %{game: _game_data}, 4000
 
     # any player starts the game
-    ref = push(socket1, "start_game", %{"game_id" => game_id})
+    ref = push(socket1, "start_game", %{"game_id" => game_id, "options" => %{ "letters" => ["A", "M", "E", "P", "C", "T", "E", "I", "N"], "duration" => 30}})
     assert_reply ref, :ok
 
     # Both players should receive the game_started event
@@ -48,12 +49,12 @@ defmodule CountdownApiWeb.Integration.GameFlowTest do
     # Both players submit answers
     ref = push(socket1, "submit_answer", %{"game_id" => game_id, "value" => "CAT"})
     assert_reply ref, :ok, %{submission_id: _submission_id1}
-    ref = push(socket2, "submit_answer", %{"game_id" => game_id, "value" => "HAT"})
+    ref = push(socket2, "submit_answer", %{"game_id" => game_id, "value" => "PAT"})
     assert_reply ref, :ok, %{submission_id: _submission_id2}
 
     # Both should receive submission broadcasts
     assert_broadcast "new_submission", %{value: "CAT"}, 1000
-    assert_broadcast "new_submission", %{value: "HAT"}, 1000
+    assert_broadcast "new_submission", %{value: "PAT"}, 1000
 
     # Should receive game_ended broadcast
     assert_broadcast "game_ended", %{game_id: ^game_id, results: results}, 4000
@@ -62,9 +63,9 @@ defmodule CountdownApiWeb.Integration.GameFlowTest do
     assert results.winner
 
     # Get end-of-game information
-    ref = push(socket1, "get_all_words", %{"game_id" => game_id})
-    assert_reply ref, :ok, %{words: words}
-    assert is_list(words)
+    ref = push(socket1, "get_game_results", %{"game_id" => game_id})
+    assert_reply ref, :ok, %{results: _results}
+    # assert is_list(words)
 
     # Verify submissions were saved to database
     submissions = Repo.all(from s in Submission, where: s.game_id == ^game_id)

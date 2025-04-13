@@ -8,6 +8,7 @@ defmodule CountdownApi.GameServer do
   alias CountdownApi.Schemas.{Game, Submission}
   alias Phoenix.PubSub
   import Ecto.Query
+  require Logger
 
   @pubsub CountdownApi.PubSub
   # 5 minutes timeout for inactive games
@@ -20,8 +21,8 @@ defmodule CountdownApi.GameServer do
     GenServer.start_link(__MODULE__, game_id, name: via_tuple(game_id))
   end
 
-  def start_game(game_id) do
-    GenServer.call(via_tuple(game_id), :start_game)
+  def start_game(game_id, options) do
+    GenServer.call(via_tuple(game_id), {:start_game, options})
   end
 
   def submit(game_id, player_id, value) do
@@ -46,27 +47,40 @@ defmodule CountdownApi.GameServer do
   def init(game_id) do
     game = Repo.get!(Game, game_id) |> Repo.preload([:group])
 
-    game_duration = trunc(game.duration * 1000 * @timeout_multiplier)
-
-    # Schedule game end
-    # NOTE multiplier used to help tests run faster
-    Process.send_after(self(), :end_game, game_duration)
-
     # Broadcast game created
     broadcast(game, "game_created", %{game: game_to_map(game)})
 
     {:ok, %{game: game, submissions: []}, @timeout}
   end
 
+  def handle_call(:game_status, _from, state = %{game_ended: true}) do
+    {:reply, {:game_ended, state}, state}
+  end
+
+  def handle_call(:game_status, _from, state) do
+    {:reply, {:game_active, state}, state}
+  end
+
   @impl true
-  def handle_call(:start_game, _from, %{game: game} = state) do
+  # start letters game
+  def handle_call(
+    {:start_game, %{"letters" => letters, "duration" => duration}}, 
+    _from, %{game: game, } = state
+  ) do
     # Update game with start time
-    {:ok, game} = update_game(game, %{started_at: DateTime.utc_now()})
+    {:ok, game} = update_game(game, %{letters: letters, duration: duration, started_at: DateTime.utc_now()})
+
+
+    # Schedule game end
+    # NOTE multiplier used to help tests run faster
+    game_duration = trunc(game.duration * 1000 * @timeout_multiplier)
+    IO.puts("Scheduling game end in #{game_duration}ms")
+    Process.send_after(self(), :end_game, game_duration)
 
     # Broadcast game start
     broadcast(game, "game_started", %{game: game_to_map(game)})
 
-    {:reply, { :ok }, state, @timeout}
+    {:reply, { :ok }, %{state | game: game}, @timeout}
   end
 
   @impl true
@@ -116,33 +130,60 @@ defmodule CountdownApi.GameServer do
 
   @impl true
   def handle_call(:get_results, _from, %{game: game} = state) do
-    results =
-      case game.game_type do
-        "letters" ->
-          %{
-            word_distribution: Dictionary.word_length_distribution(game.letters),
-            all_words: Dictionary.find_words(game.letters)
-          }
+    try do
+      results =
+        case game.game_type do
+          "letters" ->
+            all_words = Dictionary.find_words(game.letters)
+            IO.puts("All words: #{inspect(all_words)}")
+            %{
+              word_distribution: Dictionary.word_length_distribution(game.letters),
+              all_words: Dictionary.find_words(game.letters)
+            }
+          "conundrum" ->
+            %{
+              all_words: Dictionary.find_words(game.letters)
+            }
+          "numbers" ->
+            solutions = find_number_solutions(game.numbers, game.target)
+            %{
+              possible: length(solutions) > 0,
+              solutions: solutions
+            }
+          unknown_type ->
+            # Handle unknown game type
+            {:error, "Unknown game type: #{unknown_type}"}
+        end
 
-        "conundrum" ->
-          %{
-            all_words: Dictionary.find_words(game.letters)
-          }
-
-        "numbers" ->
-          solutions = find_number_solutions(game.numbers, game.target)
-
-          %{
-            possible: length(solutions) > 0,
-            solutions: solutions
-          }
+      case results do
+        {:error, reason} ->
+          {:reply, {:error, reason}, state, @timeout}
+        _ ->
+          {:reply, {:ok, results}, state, @timeout}
       end
+    rescue
+      error in FunctionClauseError ->
+        # Handle missing game data
+        reason = "Missing required game data: #{inspect(error)}"
+        Logger.error("Error getting results: #{reason}")
+        {:reply, {:error, reason}, state, @timeout}
 
-    {:reply, {:ok, results}, state, @timeout}
+      error in ArgumentError ->
+        # Handle invalid arguments
+        reason = "Invalid argument: #{error.message}"
+        Logger.error("Error getting results: #{reason}")
+        {:reply, {:error, reason}, state, @timeout}
+
+      error ->
+        # Handle any other unexpected errors
+        reason = "Unexpected error: #{inspect(error)}"
+        Logger.error("Error getting results: #{reason}\n#{Exception.format_stacktrace()}")
+        {:reply, {:error, reason}, state, @timeout}
+    end
   end
 
   @impl true
-  def handle_info(:end_game, %{game: game, submissions: submissions} = state) do
+  def handle_info(:end_game, %{game: game, submissions: _submissions} = state) do
     # Update game with end time
     {:ok, game} = update_game(game, %{finished_at: DateTime.utc_now()})
 
@@ -156,12 +197,15 @@ defmodule CountdownApi.GameServer do
       results: get_game_results(game)
     })
 
-    # Stop the server
-    {:stop, :normal, state}
+    IO.puts("Game ended. Updating server state...")
+
+    new_state = Map.put(state, :game_ended, true)
+    {:noreply, new_state}
   end
 
   @impl true
-  def terminate(_reason, _state) do
+  def terminate(reason, _state) do
+    IO.puts("Game server for game terminating. Reason: #{inspect(reason)}")
     :ok
   end
 
@@ -172,6 +216,7 @@ defmodule CountdownApi.GameServer do
   end
 
   defp update_game(game, attrs) do
+    IO.puts("Updating game with attrs: #{inspect(attrs)}")
     game
     |> Game.changeset(attrs)
     |> Repo.update()
@@ -198,12 +243,18 @@ defmodule CountdownApi.GameServer do
   end
 
   defp validate_word_letters(game, value) do
-    game_letters = String.graphemes(game.letters)
+    IO.puts("Validating word letters for game: #{inspect(game)}, value: #{inspect(value)}")
+    game_letters = game.letters
     word_letters = String.graphemes(value)
 
-    Enum.all?(word_letters, fn letter ->
-      Enum.count(word_letters, &(&1 == letter)) <= Enum.count(game_letters, &(&1 == letter))
-    end)
+    IO.puts("Game letters: #{inspect(game_letters)}, Word letters: #{inspect(word_letters)}")
+    if game_letters == nil do
+      {:error, "Game has no letters"}
+    else
+      Enum.all?(word_letters, fn letter ->
+        Enum.count(word_letters, &(&1 == letter)) <= Enum.count(game_letters, &(&1 == letter))
+      end)
+    end
   end
 
   # Calculate scoring

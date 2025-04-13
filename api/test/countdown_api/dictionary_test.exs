@@ -12,6 +12,7 @@ defmodule CountdownApi.DictionaryTest do
       letters = ["C", "A", "T"]
       words = CountdownApi.Dictionary.find_words(letters)
 
+      IO.puts("Words found: #{inspect(words)}")
       # Should find "cat" at minimum
       assert "cat" in words
     end

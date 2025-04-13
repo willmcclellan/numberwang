@@ -37,15 +37,20 @@ defmodule CountdownApi.Dictionary do
   def find_words(letters, min_length \\ 3) do
     letters = letters |> Enum.map(&String.downcase/1)
 
+    IO.puts("Finding words from letters: #{inspect(letters)}")
+
     # Get all words from dictionary
     words = :ets.foldl(fn {word, _}, acc -> [word | acc] end, [], @table_name)
 
+    IO.puts("Total words in dictionary: #{length(words)}")
     # Filter words that can be formed from the letters
-    words
+    res = words
     |> Enum.filter(fn word ->
       String.length(word) >= min_length && can_form_word?(word, letters)
     end)
     |> Enum.sort_by(&String.length/1, :desc)
+    IO.puts("Words found: #{inspect(res)}")
+    res
   end
 
   @doc """
@@ -88,10 +93,9 @@ defmodule CountdownApi.Dictionary do
   end
 
   defp load_dictionary do
-    # This will load a sample dictionary for development
     File.stream!(@dictionary_file)
     |> Stream.map(&String.trim/1)
-    |> Stream.filter(fn word -> String.length(word) >= 3 end)
+    |> Stream.filter(fn word -> String.length(word) >= 3 and String.length(word) <= 9 end)
     |> Enum.each(fn word ->
       :ets.insert(@table_name, {String.downcase(word), true})
     end)
