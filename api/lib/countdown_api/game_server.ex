@@ -245,8 +245,8 @@ defmodule CountdownApi.GameServer do
 
   defp validate_word_letters(game, value) do
     IO.puts("Validating word letters for game: #{inspect(game)}, value: #{inspect(value)}")
-    game_letters = game.letters
-    word_letters = String.graphemes(value)
+    game_letters = Enum.map(game.letters, &String.downcase/1)
+    word_letters = String.graphemes(value) |> Enum.map(&String.downcase/1)
 
     IO.puts("Game letters: #{inspect(game_letters)}, Word letters: #{inspect(word_letters)}")
     if game_letters == nil do
