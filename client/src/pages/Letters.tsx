@@ -79,7 +79,16 @@ const Letters = () => {
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="bg-white p-8 rounded-lg shadow-md">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Letters Round</h1>
-        <div className="grid grid-cols-9 gap-4 mb-8">
+        {state.matches('playing') && (
+          <div className="flex justify-center flex-col items-center mb-8">
+            <AnalogClock
+              duration={gameDuration}
+              isRunning={true}
+              onComplete={() => send({ type: 'TIMER_COMPLETE' })}
+            />
+          </div>
+        )}
+        <div className="grid grid-cols-9 gap-4 mb-4">
           {letters.map((letter, index) => (
             <div
               key={index}
@@ -129,16 +138,6 @@ const Letters = () => {
               </button>
             </div>
           </>
-        )}
-
-        {state.matches('playing') && (
-          <div className="flex justify-center flex-col items-center">
-            <AnalogClock
-              duration={gameDuration}
-              isRunning={true}
-              onComplete={() => send({ type: 'TIMER_COMPLETE' })}
-            />
-          </div>
         )}
         <textarea
           className="w-full h-48 mt-4 p-2 border rounded-md font-medium text-lg"
