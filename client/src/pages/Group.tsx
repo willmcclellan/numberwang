@@ -3,22 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Users, PlayCircle, BookA, Calculator, Brain } from 'lucide-react';
 import { useWebSocket, createGame } from "../lib/websocket";
 
-interface Player {
-  id: string;
-  name: string;
-  active: boolean;
-  points: number;
-}
-
 const Group = () => {
   const path = window.location.pathname;
   const urlGroup = path.split('/')[1];
 
   const navigate = useNavigate();
   const { connect, joinGroup, sendEvent } = useWebSocket();
-  const { playerName, groupName, socket, channel } = useWebSocket(store => ({
+  const { players, playerName, groupName, socket, channel } = useWebSocket(store => ({
     socket: store._socket,
     channel: store._channel,
+    players: store.players,
     playerName: store.playerName,
     groupName: store.groupName,
   }))
@@ -36,14 +30,6 @@ const Group = () => {
       joinGroup(urlGroup)
     }
   }, [playerName, groupName, socket]);
-
-// Mock data - replace with actual WebSocket data
-  const players: Player[] = [
-    { id: '1', name: 'Alice', active: true, points: 120 },
-    { id: '2', name: 'Bob', active: true, points: 95 },
-    { id: '3', name: 'Charlie', active: false, points: 85 },
-    { id: '4', name: 'David', active: true, points: 75 },
-  ].sort((a, b) => b.points - a.points);
 
   const startGame = async (gameType: 'letters' | 'numbers' | 'conundrum') => {
     try {
@@ -79,13 +65,13 @@ const Group = () => {
               <div className="flex items-center space-x-3">
                 <div
                   className={`w-2 h-2 rounded-full ${
-                    player.active ? 'bg-green-500' : 'bg-gray-300'
+                    true ? 'bg-green-500' : 'bg-gray-300'
                   }`}
                 />
                 <span className="font-medium">{player.name}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-gray-600">{player.points}</span>
+                <span className="text-gray-600">XX</span>
                 <span className="text-sm text-gray-500">pts</span>
               </div>
             </div>
@@ -104,7 +90,7 @@ const Group = () => {
 
         <button
           onClick={() => startGame('numbers')}
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow flex flex-col items-center space-y-3"
+          className="disabled opacity-50 bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow flex flex-col items-center space-y-3"
         >
           <Calculator className="h-8 w-8 text-green-500" />
           <span className="font-medium">Numbers Round</span>
@@ -112,7 +98,7 @@ const Group = () => {
 
         <button
           onClick={() => startGame('conundrum')}
-          className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow flex flex-col items-center space-y-3"
+          className="disabled opacity-50 bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow flex flex-col items-center space-y-3"
         >
           <Brain className="h-8 w-8 text-red-500" />
           <span className="font-medium">Conundrum</span>

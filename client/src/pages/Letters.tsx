@@ -164,6 +164,7 @@ const Letters = () => {
             </button>
           </div>
 
+          {/**
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Player Submissions</h2>
             <div className="space-y-4">
@@ -193,6 +194,7 @@ const Letters = () => {
               ))}
             </div>
           </div>
+          */}
 
           {showWordLengths && (
             <div className="bg-white p-6 rounded-lg shadow-md">

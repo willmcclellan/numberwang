@@ -2,11 +2,19 @@ import { Socket, Channel } from 'phoenix';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware'
 
+interface Player {
+  id: string;
+  name: string;
+  //active: boolean;
+  //points: number;
+}
+
 interface WebSocketStore {
   _socket: Socket | null;
   _channel: Channel | null;
   connected: boolean;
   playerName: string | null;
+  players: Player[];
   groupId: number | null;
   groupName: string | null;
   games: Record<string, any>; // TODO Replace with actual game type
@@ -24,6 +32,7 @@ export const useWebSocket = create<WebSocketStore>()(persist(
     _socket: null,
     _channel: null,
     connected: false,
+    players: [],
     playerName: null,
     groupId: null,
     groupName: null,
@@ -77,7 +86,8 @@ export const useWebSocket = create<WebSocketStore>()(persist(
       // Set up channel event listeners
       channel.on('players_list', (payload) => {
         // Handle players list update
-        console.log('Players list:', payload);
+        console.debug('Players list:', payload);
+        set({ players: payload.players });
       });
 
       channel.on('player_joined', (payload) => {
