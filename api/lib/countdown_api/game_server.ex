@@ -135,7 +135,7 @@ defmodule CountdownApi.GameServer do
         case game.game_type do
           "letters" ->
             all_words = Dictionary.find_words(game.letters)
-            IO.puts("All words: #{inspect(all_words)}")
+            IO.puts("All words: #{inspect(length(all_words))}")
             %{
               word_distribution: Dictionary.word_length_distribution(game.letters),
               all_words: Dictionary.find_words(game.letters)
@@ -184,6 +184,7 @@ defmodule CountdownApi.GameServer do
 
   @impl true
   def handle_info(:end_game, %{game: game, submissions: _submissions} = state) do
+    game = Repo.get!(Game, game.id)
     # Update game with end time
     {:ok, game} = update_game(game, %{finished_at: DateTime.utc_now()})
 

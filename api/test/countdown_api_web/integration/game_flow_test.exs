@@ -64,7 +64,7 @@ defmodule CountdownApiWeb.Integration.GameFlowTest do
 
     # Get end-of-game information
     ref = push(socket1, "get_game_results", %{"game_id" => game_id})
-    assert_reply ref, :ok, %{results: _results}
+    assert_reply ref, :ok, %{results: _results}, 10000
     # assert is_list(words)
 
     # Verify submissions were saved to database

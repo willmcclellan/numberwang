@@ -163,7 +163,6 @@ defmodule CountdownApiWeb.GroupChannel do
   def handle_in("get_game_results", %{"game_id" => game_id}, socket) do
     case GameManager.get_game_results(game_id) do
       {:ok, results} ->
-        IO.puts("get_game_results: #{inspect(results)}")
         {:reply, {:ok, %{results: results}}, socket}
 
       {:error, reason} ->

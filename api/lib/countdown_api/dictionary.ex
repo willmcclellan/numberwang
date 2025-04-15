@@ -49,7 +49,7 @@ defmodule CountdownApi.Dictionary do
       String.length(word) >= min_length && can_form_word?(word, letters)
     end)
     |> Enum.sort_by(&String.length/1, :desc)
-    IO.puts("Words found: #{inspect(res)}")
+    IO.puts("Words found: #{inspect(length(res))}")
     res
   end
 
