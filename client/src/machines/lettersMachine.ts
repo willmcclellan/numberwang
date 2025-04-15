@@ -22,6 +22,7 @@ export type LettersEvent =
   | { type: 'ADD_VOWEL' }
   | { type: 'ADD_CONSONANT' }
   | { type: 'RANDOM_FILL' }
+  | { type: 'RESULTS'; wordLengthDistribution: Record<number, number>; possibleWords: string[] }
   | { type: 'STARTED_GAME' }
   | { type: 'TIMER_COMPLETE' }
   | { type: 'TOGGLE_WORD_LENGTHS' }
@@ -148,6 +149,12 @@ export const lettersMachine = createMachine({
     completed: {
       entry: ['getGameResults', log('Game completed')],
       on: {
+        RESULTS: {
+          actions: assign({
+            wordLengthDistribution: ({ event }) => event.wordLengthDistribution,
+            possibleWords: ({ event }) => event.possibleWords,
+          })
+        },
         TOGGLE_WORD_LENGTHS: {
           actions: assign({
             showWordLengths: ({ context }) => !context.showWordLengths

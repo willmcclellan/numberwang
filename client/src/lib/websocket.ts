@@ -211,6 +211,6 @@ export const getNumberSolutions = (gameId: string) => {
   return useWebSocket.getState().sendEvent('get_number_solutions', { game_id: gameId });
 };
 
-export const getGameResults = (gameId: string) => {
+export const getGameResults = <T>(gameId: string): Promise<{ results: T }> => {
   return useWebSocket.getState().sendEvent('get_game_results', { game_id: gameId });
 };

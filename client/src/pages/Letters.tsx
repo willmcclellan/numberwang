@@ -7,6 +7,11 @@ import AnalogClock from '../components/AnalogClock';
 import Toggle from '../components/Toggle';
 import { useWebSocket, startLettersGame, submitAnswer, getGameResults } from "../lib/websocket";
 
+interface GameResults {
+  all_words: string[];
+  word_distribution: Record<string, number>;
+}
+
 const Letters = () => {
   const gameId = window.location.pathname.split('/')[3];
   const [submissions, setSubmissions] = useState<string[]>([]);
@@ -26,8 +31,13 @@ const Letters = () => {
         },
         getGameResults: async () => {
           console.debug('Letters: Getting game results');
-          const results = await getGameResults(gameId)
-          console.debug('Letters: Game results:', results);
+          const { results: gameResults } = await getGameResults<GameResults>(gameId)
+          console.debug('Letters: Received Game results:', gameResults);
+          send({
+            type: 'RESULTS',
+            wordLengthDistribution: gameResults.word_distribution,
+            possibleWords: gameResults.all_words,
+          });
         },
       },
     })
@@ -189,18 +199,20 @@ const Letters = () => {
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-bold mb-4">Word Length Distribution</h2>
               <div className="space-y-2">
-                {Object.entries(wordLengthDistribution).map(([length, count]) => (
-                  <div key={length} className="flex items-center space-x-2">
-                    <span className="w-20">{length} letters:</span>
-                    <div className="flex-1 bg-blue-100 rounded-full h-4">
-                      <div
-                        className="bg-blue-600 h-4 rounded-full"
-                        style={{ width: `${(count / Math.max(...Object.values(wordLengthDistribution))) * 100}%` }}
-                      />
+                {Object.entries(wordLengthDistribution)
+                  .sort(([a], [b]) => parseInt(b) - parseInt(a))
+                  .map(([length, count]) => (
+                    <div key={length} className="flex items-center space-x-2">
+                      <span className="w-20">{length} letters:</span>
+                      <div className="flex-1 bg-blue-100 rounded-full h-4">
+                        <div
+                          className="bg-blue-600 h-4 rounded-full"
+                          style={{ width: `${(count / Math.max(...Object.values(wordLengthDistribution))) * 100}%` }}
+                        />
+                      </div>
+                      <span className="w-12 text-right">{count}</span>
                     </div>
-                    <span className="w-12 text-right">{count}</span>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}
