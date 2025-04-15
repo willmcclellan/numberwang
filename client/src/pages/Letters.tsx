@@ -5,28 +5,37 @@ import { useMachine } from '@xstate/react';
 import { lettersMachine } from '../machines/lettersMachine';
 import AnalogClock from '../components/AnalogClock';
 import Toggle from '../components/Toggle';
-import { useWebSocket } from "../lib/websocket";
+import { useWebSocket, startLettersGame, submitAnswer, getGameResults } from "../lib/websocket";
 
 const Letters = () => {
   const gameId = window.location.pathname.split('/')[3];
   const [submissions, setSubmissions] = useState<string[]>([]);
-  const { _channel: channel, sendEvent } = useWebSocket();
+  const { _channel: channel } = useWebSocket();
   const [state, send] = useMachine(
     lettersMachine.provide({
       actions: {
-        startGame: () => {
-          sendEvent('start_game', { game_id: gameId })
+        startGame: ({ context }) => {
+          console.debug('Letters: Starting game with context:', context);
+          const { letters, gameDuration } = context;
+          startLettersGame(gameId, letters, gameDuration)
         },
         sendSubmission: (_, params: unknown) => {
+          console.debug('Letters: Sending submission:', params);
           const submissionParams = params as { submission: string };
-          sendEvent('submit_answer', {
-            game_id: gameId,
-            value: submissionParams,
-          })
-        }
+          submitAnswer(gameId, submissionParams.submission);
+        },
+        getGameResults: async () => {
+          console.debug('Letters: Getting game results');
+          const results = await getGameResults(gameId)
+          console.debug('Letters: Game results:', results);
+        },
       },
     })
   );
+
+  useEffect(() => {
+    console.debug('Letters: Current state:', state.value);
+  }, [state.value]);
 
   useEffect(() => {
     if (channel) {

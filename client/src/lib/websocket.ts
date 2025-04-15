@@ -179,34 +179,38 @@ export interface AllWordsPayload {
 }
 
 // Game-specific helper functions
-export const createLettersGame = (duration: number) => {
-  return useWebSocket.getState().sendEvent('create_letters_game', { duration });
+export const createGame = (gameType: 'letters' | 'numbers' | 'conundrum') => {
+  return useWebSocket.getState().sendEvent(`create_${gameType}_game`, {});
+}
+
+export const startLettersGame = (gameId: string, letters: string[], duration: number) => {
+  return useWebSocket.getState().sendEvent('start_game', { game_id: gameId, options: { letters, duration } });
 };
 
-export const createNumbersGame = (duration: number, largeCount: number) => {
-  return useWebSocket.getState().sendEvent('create_numbers_game', { duration, large_count: largeCount });
-};
+//export const createNumbersGame = (duration: number, largeCount: number) => {
+//  return useWebSocket.getState().sendEvent('create_numbers_game', { duration, large_count: largeCount });
+//};
+//
+//export const createConundrumGame = (duration: number) => {
+//  return useWebSocket.getState().sendEvent('create_conundrum_game', { duration });
+//};
 
-export const createConundrumGame = (duration: number) => {
-  return useWebSocket.getState().sendEvent('create_conundrum_game', { duration });
-};
-
-export const submitAnswer = (gameId: number, value: string) => {
+export const submitAnswer = (gameId: string, value: string) => {
   return useWebSocket.getState().sendEvent('submit_answer', { game_id: gameId, value });
 };
 
-export const getWordDistribution = (gameId: number) => {
-  return useWebSocket.getState().sendEvent('get_word_distribution', { game_id: gameId });
-};
-
-export const getAllWords = (gameId: number) => {
-  return useWebSocket.getState().sendEvent('get_all_words', { game_id: gameId });
-};
-
-export const getNumberSolutions = (gameId: number) => {
+//export const getWordDistribution = (gameId: string) => {
+//  return useWebSocket.getState().sendEvent('get_word_distribution', { game_id: gameId });
+//};
+//
+//export const getAllWords = (gameId: string) => {
+//  return useWebSocket.getState().sendEvent('get_all_words', { game_id: gameId });
+//};
+//
+export const getNumberSolutions = (gameId: string) => {
   return useWebSocket.getState().sendEvent('get_number_solutions', { game_id: gameId });
 };
 
-export const getGameResults = (gameId: number) => {
+export const getGameResults = (gameId: string) => {
   return useWebSocket.getState().sendEvent('get_game_results', { game_id: gameId });
 };

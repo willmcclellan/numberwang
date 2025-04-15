@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Users, PlayCircle, BookA, Calculator, Brain } from 'lucide-react';
-import { useWebSocket } from "../lib/websocket";
+import { useWebSocket, createGame } from "../lib/websocket";
 
 interface Player {
   id: string;
@@ -47,8 +47,7 @@ const Group = () => {
 
   const startGame = async (gameType: 'letters' | 'numbers' | 'conundrum') => {
     try {
-      // TODO this needs duration removing and moving to start game
-      const response = await sendEvent(`create_${gameType}_game`, { duration: 30 });
+      const response = await createGame(gameType)
       navigate(`/${groupName}/${gameType}/${response.game_id}`);
     } catch (error) {
       console.error('Failed to start game:', error);

@@ -146,7 +146,7 @@ export const lettersMachine = createMachine({
       }
     },
     completed: {
-      entry: [log('Game completed')],
+      entry: ['getGameResults', log('Game completed')],
       on: {
         TOGGLE_WORD_LENGTHS: {
           actions: assign({
