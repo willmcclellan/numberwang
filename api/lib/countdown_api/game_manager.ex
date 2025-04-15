@@ -99,7 +99,6 @@ defmodule CountdownApi.GameManager do
   Get game results (available words, solutions, etc.)
   """
   def get_game_results(game_id) do
-    IO.puts("Getting game results for game_id: #{game_id}")
     case ensure_game_server(game_id) do
       {:ok, _pid} -> GameServer.get_results(game_id)
       {:error, _} = error -> error
