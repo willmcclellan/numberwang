@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Shuffle, Eye, EyeOff } from 'lucide-react';
+import { Shuffle, EyeOff, Eye } from 'lucide-react';
 import { useDebounce } from 'react-use'
 import { useMachine } from '@xstate/react';
 import { lettersMachine } from '../machines/lettersMachine';
@@ -8,8 +8,23 @@ import Toggle from '../components/Toggle';
 import { useWebSocket, startLettersGame, submitAnswer, getGameResults } from "../lib/websocket";
 
 interface GameResults {
-  all_words: string[];
-  word_distribution: Record<string, number>;
+  results: {
+    all_words: string[];
+    word_distribution: Record<string, number>;
+  }
+  submissions: Array<{
+    player_id: string;
+    player_name: string;
+    value: string;
+    score: number;
+    valid: boolean;
+  }>;
+  winner: {
+    player_id: string;
+    player_name: string;
+    value: string;
+    score: number;
+  };
 }
 
 const Letters = () => {
@@ -35,8 +50,23 @@ const Letters = () => {
           console.debug('Letters: Received Game results:', gameResults);
           send({
             type: 'RESULTS',
-            wordLengthDistribution: gameResults.word_distribution,
-            possibleWords: gameResults.all_words,
+            results: {
+              winner: {
+                playerId: gameResults.winner.player_id,
+                playerName: gameResults.winner.player_name,
+                word: gameResults.winner.value,
+                score: gameResults.winner.score,
+              },
+              playerSubmissions: gameResults.submissions.map(submission => ({
+                playerId: submission.player_id,
+                playerName: submission.player_name,
+                word: submission.value,
+                score: submission.score,
+                valid: submission.valid,
+              })),
+              wordLengthDistribution: gameResults.results.word_distribution,
+              possibleWords: gameResults.results.all_words,
+            }
           });
         },
       },
@@ -64,16 +94,18 @@ const Letters = () => {
 
   useDebounce(() => {
     send({ type: 'SUBMIT', submissions });
-  }, 300, [submissions]);
+  }, 800, [submissions]);
 
   const { 
-    letters, 
+    letters = [], 
     gameDuration, 
     showWordLengths, 
     showPossibleWords, 
-    players,
+    showResults,
     wordLengthDistribution,
-    possibleWords 
+    possibleWords ,
+    playerSubmissions,
+    winner,
   } = state.context;
 
   return (
@@ -163,39 +195,41 @@ const Letters = () => {
             >
               {showPossibleWords ? 'Hide' : 'Show'} Possible Words
             </button>
+            <button
+              onClick={() => send({ type: 'TOGGLE_RESULTS' })}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+            >
+              {showResults ? 'Hide' : 'Show'} Results
+            </button>
           </div>
 
-          {/**
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">Player Submissions</h2>
-            <div className="space-y-4">
-              {players.map(player => (
-                <div key={player.id} className="flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold">{player.name}</span>
-                    <span className="ml-2 text-gray-600">({player.wordLength} letters)</span>
-                  </div>
-                  <button
-                    onClick={() => send({ type: 'TOGGLE_PLAYER_WORD', playerId: player.id })}
-                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-                  >
-                    {player.word ? (
-                      <>
-                        <EyeOff className="w-4 h-4" />
-                        <span>{player.word}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="w-4 h-4" />
-                        <span>Reveal Word</span>
-                      </>
-                    )}
-                  </button>
+          {showResults && (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-bold mb-4">Winner</h2>
+              {winner ? (
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-semibold">{winner.playerName}</span>
+                  <span className="ml-2 text-gray-600">({winner.word.length} letters)</span>
                 </div>
-              ))}
+              ) : (
+                <p>No winner yet!</p>
+              )}
+              <h2 className="text-xl font-bold mb-4">Submissions</h2>
+              <div className="space-y-4">
+                {playerSubmissions
+                  ?.sort((a, b) => b.score - a.score)
+                  ?.map(submission => (
+                    <div key={`${submission.playerId}-${submission.word}`} className="flex items-center justify-between">
+                      <div>
+                        <span className="font-semibold">{submission.playerName}</span>
+                        <span className="ml-2 text-gray-600">({submission.word.length} letters)</span>
+                      </div>
+                      <span>{submission.word}</span>
+                    </div>
+                  ))}
+              </div>
             </div>
-          </div>
-          */}
+          )}
 
           {showWordLengths && (
             <div className="bg-white p-6 rounded-lg shadow-md">
@@ -229,15 +263,6 @@ const Letters = () => {
               </div>
             </div>
           )}
-
-          <div className="flex justify-center">
-            <button
-              onClick={() => send({ type: 'RESET' })}
-              className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700"
-            >
-              New Game
-            </button>
-          </div>
         </div>
       )}
     </div>

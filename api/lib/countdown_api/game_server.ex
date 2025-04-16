@@ -131,36 +131,8 @@ defmodule CountdownApi.GameServer do
   @impl true
   def handle_call(:get_results, _from, %{game: game} = state) do
     try do
-      results =
-        case game.game_type do
-          "letters" ->
-            all_words = Dictionary.find_words(game.letters)
-            IO.puts("All words: #{inspect(length(all_words))}")
-            %{
-              word_distribution: Dictionary.word_length_distribution(game.letters),
-              all_words: Dictionary.find_words(game.letters)
-            }
-          "conundrum" ->
-            %{
-              all_words: Dictionary.find_words(game.letters)
-            }
-          "numbers" ->
-            solutions = find_number_solutions(game.numbers, game.target)
-            %{
-              possible: length(solutions) > 0,
-              solutions: solutions
-            }
-          unknown_type ->
-            # Handle unknown game type
-            {:error, "Unknown game type: #{unknown_type}"}
-        end
-
-      case results do
-        {:error, reason} ->
-          {:reply, {:error, reason}, state, @timeout}
-        _ ->
-          {:reply, {:ok, results}, state, @timeout}
-      end
+      results = get_game_results(game)
+      {:reply, {:ok, results}, state, @timeout}
     rescue
       error in FunctionClauseError ->
         # Handle missing game data
@@ -305,9 +277,34 @@ defmodule CountdownApi.GameServer do
       |> Enum.sort_by(& &1.score, :desc)
       |> List.first()
 
+    results =
+      case game.game_type do
+        "letters" ->
+          all_words = Dictionary.find_words(game.letters)
+          IO.puts("All words: #{inspect(length(all_words))}")
+          %{
+            word_distribution: Dictionary.word_length_distribution(game.letters),
+            all_words: Dictionary.find_words(game.letters)
+          }
+        "conundrum" ->
+          %{
+            all_words: Dictionary.find_words(game.letters)
+          }
+        "numbers" ->
+          solutions = find_number_solutions(game.numbers, game.target)
+          %{
+            possible: length(solutions) > 0,
+            solutions: solutions
+          }
+        unknown_type ->
+          # Handle unknown game type
+          {:error, "Unknown game type: #{unknown_type}"}
+      end
+
     %{
       game_id: game.id,
       game_type: game.game_type,
+      results: results,
       winner:
         winner &&
           %{

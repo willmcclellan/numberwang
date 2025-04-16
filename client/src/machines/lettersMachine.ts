@@ -1,6 +1,14 @@
 import { createMachine, assign, enqueueActions, log } from 'xstate';
 import { Game } from '../lib/websocket';
 
+interface PlayerSubmission {
+  playerId: string;
+  playerName: string;
+  word: string;
+  valid: boolean;
+  score: number;
+}
+
 export interface LettersContext {
   letters?: string[];
   players: Player[];
@@ -8,8 +16,16 @@ export interface LettersContext {
   wordLengthDistribution: Record<number, number>;
   possibleWords: string[];
   gameDuration: number;
+  playerSubmissions?: PlayerSubmission[];
+  winner?: {
+    playerId: string;
+    playerName: string;
+    word: string;
+    score: number;
+  };
   showWordLengths: boolean;
   showPossibleWords: boolean;
+  showResults: boolean;
 }
 
 interface Player {
@@ -19,15 +35,24 @@ interface Player {
   word?: string;
 }
 
+interface Results {
+  possibleWords: LettersContext['possibleWords'];
+  wordLengthDistribution: LettersContext['wordLengthDistribution'];
+  winner: LettersContext['winner'];
+  playerSubmissions: LettersContext['playerSubmissions'];
+
+}
+
 export type LettersEvent =
   | { type: 'ADD_VOWEL' }
   | { type: 'ADD_CONSONANT' }
   | { type: 'RANDOM_FILL' }
-  | { type: 'RESULTS'; wordLengthDistribution: Record<number, number>; possibleWords: string[] }
+  | { type: 'RESULTS'; results: Results }
   | { type: 'STARTED_GAME', game: Game }
   | { type: 'TIMER_COMPLETE' }
   | { type: 'TOGGLE_WORD_LENGTHS' }
   | { type: 'TOGGLE_POSSIBLE_WORDS' }
+  | { type: 'TOGGLE_RESULTS' }
   | { type: 'TOGGLE_PLAYER_WORD'; playerId: string }
   | { type: 'SET_DURATION'; duration: number }
   | { type: 'SUBMIT'; submissions: string[] }
@@ -52,6 +77,7 @@ export const lettersMachine = createMachine({
     gameDuration: 30,
     showWordLengths: false,
     showPossibleWords: false,
+    showResults:false,
   },
   states: {
     selecting: {
@@ -165,9 +191,14 @@ export const lettersMachine = createMachine({
       entry: ['getGameResults', log('Game completed')],
       on: {
         RESULTS: {
-          actions: assign({
-            wordLengthDistribution: ({ event }) => event.wordLengthDistribution,
-            possibleWords: ({ event }) => event.possibleWords,
+          actions: assign(({ event }) => {
+            const { wordLengthDistribution, possibleWords, playerSubmissions, winner } = event.results;
+            return {
+              wordLengthDistribution,
+              possibleWords,
+              playerSubmissions,
+              winner,
+            }
           })
         },
         TOGGLE_WORD_LENGTHS: {
@@ -180,15 +211,20 @@ export const lettersMachine = createMachine({
             showPossibleWords: ({ context }) => !context.showPossibleWords
           })
         },
-        TOGGLE_PLAYER_WORD: {
+        TOGGLE_RESULTS: {
           actions: assign({
-            players: ({ context, event }) => context.players.map(player =>
-              player.id === event.playerId
-                ? { ...player, word: player.word ? undefined : 'EXAMPLE' }
-                : player
-            )
+            showResults: ({ context }) => !context.showResults
           })
         },
+        //TOGGLE_PLAYER_WORD: {
+        //  actions: assign({
+        //    players: ({ context, event }) => context.players.map(player =>
+        //      player.id === event.playerId
+        //        ? { ...player, word: player.word ? undefined : 'EXAMPLE' }
+        //        : player
+        //    )
+        //  })
+        //},
         RESET: {
           target: 'selecting',
           actions: assign({
