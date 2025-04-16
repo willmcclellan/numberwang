@@ -36,7 +36,7 @@ interface WebSocketStore {
   sendEvent: (event: string, payload: any) => Promise<any>;
 }
 
-const SOCKET_URL = 'ws://localhost:4000/socket';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'ws://localhost:4000/socket';
 
 export const useWebSocket = create<WebSocketStore>()(persist(
   (set, get) => ({
