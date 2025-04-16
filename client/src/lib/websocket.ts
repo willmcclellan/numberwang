@@ -2,7 +2,18 @@ import { Socket, Channel } from 'phoenix';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware'
 
-interface Player {
+export interface Game {
+  id: string;
+  game_type: 'letters' | 'numbers' | 'conundrum';
+  duration: number;
+  letters?: string[];
+  numbers?: number[];
+  target?: number;
+  started_at: string;
+  group_id: number;
+}
+
+export interface Player {
   id: string;
   name: string;
   //active: boolean;

@@ -1,7 +1,8 @@
 import { createMachine, assign, enqueueActions, log } from 'xstate';
+import { Game } from '../lib/websocket';
 
 export interface LettersContext {
-  letters: string[];
+  letters?: string[];
   players: Player[];
   submissions: string[];
   wordLengthDistribution: Record<number, number>;
@@ -23,7 +24,7 @@ export type LettersEvent =
   | { type: 'ADD_CONSONANT' }
   | { type: 'RANDOM_FILL' }
   | { type: 'RESULTS'; wordLengthDistribution: Record<number, number>; possibleWords: string[] }
-  | { type: 'STARTED_GAME' }
+  | { type: 'STARTED_GAME', game: Game }
   | { type: 'TIMER_COMPLETE' }
   | { type: 'TOGGLE_WORD_LENGTHS' }
   | { type: 'TOGGLE_POSSIBLE_WORDS' }
@@ -60,7 +61,7 @@ export const lettersMachine = createMachine({
         checkLetters: {
           always: [
             {
-              guard: ({ context }) => context.letters.length === 9,
+              guard: ({ context }) => context.letters?.length === 9,
               target: '#letters.ready',
             },
             { target: 'waiting' }
@@ -69,20 +70,20 @@ export const lettersMachine = createMachine({
       },
       on: {
         ADD_VOWEL: {
-          guard: ({ context }) => context.letters.length < 9,
+          guard: ({ context }) => (context.letters?.length || 0) < 9,
           actions: assign({
             letters: ({ context }) => [
-              ...context.letters,
+              ...(context.letters || []),
               VOWELS[Math.floor(Math.random() * VOWELS.length)]
             ]
           }),
           target: '.checkLetters'
         },
         ADD_CONSONANT: {
-          guard: ({ context }) => context.letters.length < 9,
+          guard: ({ context }) => (context.letters?.length || 0) < 9,
           actions: assign({
             letters: ({ context }) => [
-              ...context.letters,
+              ...(context.letters || []),
               CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)]
             ]
           }),
@@ -110,7 +111,10 @@ export const lettersMachine = createMachine({
           actions: assign({
             gameDuration: ({ event }) => event.duration
           })
-        }
+        },
+        STARTED_GAME: {
+          target: 'playing',
+        },
       }
     },
     ready: {
@@ -122,7 +126,18 @@ export const lettersMachine = createMachine({
       }
     },
     playing: {
-      entry: [log('Game started')],
+      entry: [
+        log('Game started'), 
+        assign(({ event }) => {
+          if (event.type !== 'STARTED_GAME') {
+            throw new Error('Expected STARTED_GAME event');
+          }
+          return {
+            letters: event.game.letters,
+            duration: event.game.duration,
+          }
+        })
+      ],
       on: {
         SUBMIT: {
           actions: enqueueActions(({ context, event, enqueue }) => {

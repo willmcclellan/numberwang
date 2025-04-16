@@ -49,8 +49,9 @@ const Letters = () => {
 
   useEffect(() => {
     if (channel) {
-      channel.on('game_started', () => {
-        send({ type: 'STARTED_GAME' });
+      channel.on('game_started', (payload) => {
+        console.debug('Letters: Game started', { payload });
+        send({ type: 'STARTED_GAME', game: payload.game });
       });
     }
   }, [channel, send]);

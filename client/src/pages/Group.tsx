@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Users, PlayCircle, BookA, Calculator, Brain } from 'lucide-react';
+import { Trophy, Users, BookA, Calculator, Brain } from 'lucide-react';
 import { useWebSocket, createGame } from "../lib/websocket";
 
 const Group = () => {
@@ -8,7 +8,7 @@ const Group = () => {
   const urlGroup = path.split('/')[1];
 
   const navigate = useNavigate();
-  const { connect, joinGroup, sendEvent } = useWebSocket();
+  const { connect, joinGroup } = useWebSocket();
   const { players, playerName, groupName, socket, channel } = useWebSocket(store => ({
     socket: store._socket,
     channel: store._channel,
@@ -30,6 +30,17 @@ const Group = () => {
       joinGroup(urlGroup)
     }
   }, [playerName, groupName, socket]);
+
+  useEffect(() => {
+    if (channel) {
+      channel.on('game_created', (payload) => {
+        console.debug('Game created, navigating to game', { payload });
+        const gameId = payload.game.id;
+        const gameType = payload.game.game_type;
+        navigate(`/${groupName}/${gameType}/${gameId}`);
+      });
+    }
+  }, [channel, navigate]);
 
   const startGame = async (gameType: 'letters' | 'numbers' | 'conundrum') => {
     try {
