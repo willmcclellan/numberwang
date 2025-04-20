@@ -23,7 +23,7 @@ export interface Player {
 interface WebSocketStore {
   _socket: Socket | null;
   _channel: Channel | null;
-  connected: boolean;
+  _connected: boolean;
   playerName: string | null;
   players: Player[];
   groupId: number | null;
@@ -42,7 +42,7 @@ export const useWebSocket = create<WebSocketStore>()(persist(
   (set, get) => ({
     _socket: null,
     _channel: null,
-    connected: false,
+    _connected: false,
     players: [],
     playerName: null,
     groupId: null,
@@ -58,7 +58,7 @@ export const useWebSocket = create<WebSocketStore>()(persist(
 
       await new Promise((resolve, reject) => {
         socket.onOpen(() => {
-          set({ _socket: socket, connected: true, playerName });
+          set({ _socket: socket, _connected: true, playerName });
           resolve(undefined);
         });
 
@@ -73,7 +73,7 @@ export const useWebSocket = create<WebSocketStore>()(persist(
         socket.disconnect();
       }
 
-      set({ _socket: null, _channel: null, connected: false, playerName: null, groupId: null, groupName: null });
+      set({ _socket: null, _channel: null, _connected: false, playerName: null, groupId: null, groupName: null });
     },
 
     joinGroup: async (groupId: string) => {
@@ -151,7 +151,15 @@ export const useWebSocket = create<WebSocketStore>()(persist(
   }),
   { 
     name: 'websocket-store', 
-    partialize: state => ({ ...state, _socket: null, _channel: null }),
+    partialize: state => {
+      return { 
+        ...state, 
+        // NOTE don't persist non-serializable or in-memory values
+        _socket: null, 
+        _channel: null, 
+        _connected: false 
+      }
+    },
   },
 ));
 

@@ -9,7 +9,7 @@ const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const navigate = useNavigate();
-  const { connect, disconnect, joinGroup, leaveGroup, connected, groupName } = useWebSocket();
+  const {  _connected, connect, disconnect, joinGroup, leaveGroup, groupName } = useWebSocket();
 
   // TODO do we need this?
   // Cleanup on unmount
@@ -20,6 +20,7 @@ const Home = () => {
   //}, [disconnect]);
 
   const handleCreateGroup = async () => {
+    
     if (!playerName.trim()) {
       setError('Please enter your name');
       return;
@@ -89,7 +90,7 @@ const Home = () => {
           onChange={(e) => setPlayerName(e.target.value)}
           placeholder="Your name"
           className="w-full p-2 border border-gray-300 rounded-md mb-4"
-          disabled={isConnecting || connected}
+          disabled={isConnecting || _connected}
         />
       </div>
       
@@ -121,7 +122,7 @@ const Home = () => {
               onChange={(e) => setGroupId(e.target.value)}
               placeholder="Enter group code"
               className="w-full p-2 border border-gray-300 rounded-md mb-4"
-              disabled={isConnecting || connected}
+              disabled={isConnecting || _connected}
             />
             <button
               type="submit"
@@ -134,7 +135,7 @@ const Home = () => {
         </div>
       </div>
 
-      {connected && groupName && (
+      {_connected && groupName && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-md">
           Connected to group: {groupName} <button onClick={leaveGroup} className="text-blue-600 hover:underline">Leave Group</button>
         </div>
