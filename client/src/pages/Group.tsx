@@ -22,7 +22,11 @@ const Group = () => {
   }
 
   useEffect(() => {
-    if (!socket && playerName) {
+    console.debug('Group component mounted', { playerName, groupName, socket });
+    if (!playerName && !socket) {
+      console.debug('No player name or socket, navigating to home');
+      navigate(`/?groupName=${urlGroup}`);
+    } else if (!socket && playerName) {
       console.debug('Connecting to WebSocket', { playerName });
       handleConnect(playerName)
     } else if (!channel && playerName) {

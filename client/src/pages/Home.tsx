@@ -4,7 +4,8 @@ import { Users, UserPlus } from 'lucide-react';
 import { useWebSocket } from '../lib/websocket';
 
 const Home = () => {
-  const [groupId, setGroupId] = useState('');
+  const urlGroup = new URLSearchParams(window.location.search).get('groupName');
+  const [groupId, setGroupId] = useState(urlGroup);
   const [playerName, setPlayerName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
