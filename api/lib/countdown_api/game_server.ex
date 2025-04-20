@@ -46,11 +46,13 @@ defmodule CountdownApi.GameServer do
   @impl true
   def init(game_id) do
     game = Repo.get!(Game, game_id) |> Repo.preload([:group])
+    
+    group_name = game.group.name
 
     # Broadcast game created
     broadcast(game, "game_created", %{game: game_to_map(game)})
 
-    {:ok, %{game: game, submissions: []}, @timeout}
+    {:ok, %{game: game, submissions: [], group_name: group_name, game_ended: false}, @timeout}
   end
 
   def handle_call(:game_status, _from, state = %{game_ended: true}) do
@@ -156,24 +158,23 @@ defmodule CountdownApi.GameServer do
   end
 
   @impl true
-  def handle_info(:end_game, %{game: game, submissions: _submissions} = state) do
+  def handle_info(:end_game, %{game: game, submissions: _submissions, group_name: group_name} = state) do
     game = Repo.get!(Game, game.id)
+    
+    broadcast_game = %{game | group: %{name: group_name}}
+    
     # Update game with end time
     {:ok, game} = update_game(game, %{finished_at: DateTime.utc_now()})
 
-
-    # Validate all submissions and update them
-    # validate_all_submissions(game, submissions)
-
     # Broadcast game end
-    broadcast(game, "game_ended", %{
+    broadcast(broadcast_game, "game_ended", %{
       game_id: game.id,
       results: get_game_results(game)
     })
 
     IO.puts("Game ended. Updating server state...")
 
-    new_state = Map.put(state, :game_ended, true)
+    new_state = %{state | game: game, game_ended: true}
     {:noreply, new_state}
   end
 
@@ -196,8 +197,19 @@ defmodule CountdownApi.GameServer do
     |> Repo.update()
   end
 
-  defp broadcast(game, event, payload) do
-    topic = "group:#{game.group.name}"
+  defp broadcast(%{group: %{name: group_name}}, event, payload) do
+    topic = "group:#{group_name}"
+    IO.puts("Broadcasting to topic: #{topic} with event: #{event} and payload: #{inspect(payload)}")
+    PubSub.broadcast(@pubsub, topic, %Phoenix.Socket.Broadcast{
+      topic: topic,
+      event: event,
+      payload: payload
+    })
+  end
+  
+  # Add a fallback method if we have a game without group data but with group_name in state
+  defp broadcast(game_with_missing_group, event, payload, group_name) when is_binary(group_name) do
+    topic = "group:#{group_name}"
     IO.puts("Broadcasting to topic: #{topic} with event: #{event} and payload: #{inspect(payload)}")
     PubSub.broadcast(@pubsub, topic, %Phoenix.Socket.Broadcast{
       topic: topic,
@@ -257,16 +269,6 @@ defmodule CountdownApi.GameServer do
         end
     end
   end
-
-  # TODO do we need this?
-  # Final validation at game end
-  # defp validate_all_submissions(_game, submissions) do
-  #   # Implement more thorough validation if needed
-  #   # For example, checking that letters are actually available in the game
-  #   Enum.each(submissions, fn submission ->
-  #     Repo.update(Submission.changeset(submission, %{}))
-  #   end)
-  # end
 
   # Get final game results
   defp get_game_results(game) do
