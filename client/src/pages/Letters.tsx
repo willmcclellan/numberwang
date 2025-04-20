@@ -209,7 +209,7 @@ const Letters = () => {
               {winner ? (
                 <div className="flex items-center justify-between mb-4">
                   <span className="font-semibold">{winner.playerName}</span>
-                  <span className="ml-2 text-gray-600">({winner.word.length} letters)</span>
+                  <span className="font-semibold ml-2 text-green-700">{winner.word.length} letters</span>
                 </div>
               ) : (
                 <p>No winner yet!</p>
@@ -224,7 +224,7 @@ const Letters = () => {
                         <span className="font-semibold">{submission.playerName}</span>
                         <span className="ml-2 text-gray-600">({submission.word.length} letters)</span>
                       </div>
-                      <span>{submission.word}</span>
+                      <span className={`font-semibold ${submission.valid ? 'text-green-700' : 'text-red-700'}`}>{submission.word}</span>
                     </div>
                   ))}
               </div>
