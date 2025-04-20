@@ -78,6 +78,7 @@ defmodule CountdownApi.GameServer do
     Process.send_after(self(), :end_game, game_duration)
 
     # Broadcast game start
+    IO.puts("Broadcasting game started for game name #{game.group.name}")
     broadcast(game, "game_started", %{game: game_to_map(game)})
 
     {:reply, { :ok }, %{state | game: game}, @timeout}
@@ -196,7 +197,7 @@ defmodule CountdownApi.GameServer do
   end
 
   defp broadcast(game, event, payload) do
-    topic = "group:#{game.group_id}"
+    topic = "group:#{game.group.name}"
     IO.puts("Broadcasting to topic: #{topic} with event: #{event} and payload: #{inspect(payload)}")
     PubSub.broadcast(@pubsub, topic, %Phoenix.Socket.Broadcast{
       topic: topic,

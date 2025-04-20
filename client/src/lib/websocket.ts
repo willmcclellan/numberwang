@@ -76,11 +76,11 @@ export const useWebSocket = create<WebSocketStore>()(persist(
       set({ _socket: null, _channel: null, _connected: false, playerName: null, groupId: null, groupName: null });
     },
 
-    joinGroup: async (groupId: string) => {
+    joinGroup: async (groupName: string) => {
       const { _socket: socket } = get();
       if (!socket) throw new Error('Not connected');
 
-      const channel = socket.channel(`group:${groupId}`, {
+      const channel = socket.channel(`group:${groupName}`, {
         player_name: get().playerName,
       });
 
