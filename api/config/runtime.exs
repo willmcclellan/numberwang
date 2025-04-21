@@ -55,6 +55,8 @@ if config_env() == :prod do
 
   config :countdown_api, CountdownApiWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    # TODO could make this more secure with specific origins
+    check_origin: false,
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
