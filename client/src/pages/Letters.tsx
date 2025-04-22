@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Shuffle, EyeOff, Eye } from 'lucide-react';
+import { Shuffle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useDebounce } from 'react-use'
 import { useMachine } from '@xstate/react';
 import { lettersMachine } from '../machines/lettersMachine';
 import AnalogClock from '../components/AnalogClock';
 import Toggle from '../components/Toggle';
-import { useWebSocket, startLettersGame, submitAnswer, getGameResults } from "../lib/websocket";
+import { useWebSocket, createGame, startLettersGame, submitAnswer, getGameResults } from "../lib/websocket";
 
 interface GameResults {
   results: {
@@ -30,7 +31,8 @@ interface GameResults {
 const Letters = () => {
   const gameId = window.location.pathname.split('/')[3];
   const [submissions, setSubmissions] = useState<string[]>([]);
-  const { _channel: channel } = useWebSocket();
+  const { _channel: channel, groupName } = useWebSocket();
+  const navigate = useNavigate();
   const [state, send] = useMachine(
     lettersMachine.provide({
       actions: {
@@ -86,6 +88,31 @@ const Letters = () => {
     }
   }, [channel, send]);
 
+  useEffect(() => {
+    if (channel) {
+      channel.on('game_created', (payload) => {
+        console.debug('New letters game started, navigating to game', { payload });
+        const gameId = payload.game.id;
+        const gameType = payload.game.game_type;
+        navigate(`/${groupName}/${gameType}/${gameId}`);
+      });
+    }
+
+    return () => {
+      if (channel) {
+        channel.off('game_created');
+      }
+    }
+  }, [channel, navigate]);
+
+  const startNewGame = () => {
+    try {
+      createGame('letters')
+    } catch (error) {
+      console.error('Failed to start new game:', error);
+    }
+  };
+
   const handleSubmissionsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     // parse textarea value as space-separated or line-break words
     const submissions = e.target.value.split(/\s+/).filter(word => word.trim() !== '');
@@ -113,7 +140,17 @@ const Letters = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Letters Round</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Letters Round</h1>
+          {state.matches('completed') && (
+            <button
+              onClick={startNewGame}
+              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
+            >
+              New Game
+            </button>
+          )}
+        </div>
         {showClock && (
           <div className="flex justify-center flex-col items-center mb-8">
             <AnalogClock
@@ -123,7 +160,7 @@ const Letters = () => {
             />
           </div>
         )}
-        <div className="grid grid-cols-9 gap-4 mb-4">
+        <div className="max-w-xl grid grid-cols-9 gap-4 mb-4 mx-auto">
           {letters.map((letter, index) => (
             <div
               key={index}
@@ -245,7 +282,7 @@ const Letters = () => {
           {state.matches('completed') && (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-bold mb-4">Winner</h2>
-              {winner ? (
+              {winner?.playerName ? (
                 <div className="flex items-center justify-between mb-4">
                   <span className={`font-semibold ${!showResults && 'blur-sm'}`}>{winner.playerName}</span>
                   <span className={`font-semibold ml-2 text-green-700 ${!showResults && 'blur-sm'}`}>{winner.word.length} letters</span>
