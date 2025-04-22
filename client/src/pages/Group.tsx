@@ -54,8 +54,7 @@ const Group = () => {
 
   const startGame = async (gameType: 'letters' | 'numbers' | 'conundrum') => {
     try {
-      const response = await createGame(gameType)
-      navigate(`/${groupName}/${gameType}/${response.game_id}`);
+      await createGame(gameType)
     } catch (error) {
       console.error('Failed to start game:', error);
     }
