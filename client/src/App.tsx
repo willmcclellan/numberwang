@@ -9,7 +9,7 @@ import Conundrum from './pages/Conundrum';
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100">
+      <div className="min-h-screen pb-8 bg-gradient-to-b from-blue-50 to-blue-100">
         <div className="justify-center items-center flex h-32">
           <Logo />
         </div>
