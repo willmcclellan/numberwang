@@ -160,7 +160,7 @@ export const lettersMachine = createMachine({
           }
           return {
             letters: event.game.letters,
-            duration: event.game.duration,
+            gameDuration: event.game.duration,
           }
         })
       ],
