@@ -44,6 +44,12 @@ const Group = () => {
         navigate(`/${groupName}/${gameType}/${gameId}`);
       });
     }
+
+    return () => {
+      if (channel) {
+        channel.off('game_created');
+      }
+    }
   }, [channel, navigate]);
 
   const startGame = async (gameType: 'letters' | 'numbers' | 'conundrum') => {
