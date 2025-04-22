@@ -185,53 +185,29 @@ const Letters = () => {
       {state.matches('completed') && (
         <div className="space-y-6">
           <div className="flex justify-center space-x-4">
-            <button
-              onClick={() => send({ type: 'TOGGLE_WORD_LENGTHS' })}
-              className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700"
-            >
-              {showWordLengths ? 'Hide' : 'Show'} Word Length Distribution
-            </button>
-            <button
-              onClick={() => send({ type: 'TOGGLE_POSSIBLE_WORDS' })}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
-            >
-              {showPossibleWords ? 'Hide' : 'Show'} Possible Words
-            </button>
+            {!showWordLengths && (
+              <button
+                onClick={() => send({ type: 'TOGGLE_WORD_LENGTHS' })}
+                className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700"
+              >
+                {showWordLengths ? 'Hide' : 'Show'} Word Length Distribution
+              </button>
+            )}
+            {!showPossibleWords && (
+              <button
+                onClick={() => send({ type: 'TOGGLE_POSSIBLE_WORDS' })}
+                className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+              >
+                {showPossibleWords ? 'Hide' : 'Show'} Possible Words
+              </button>
+            )}
             <button
               onClick={() => send({ type: 'TOGGLE_RESULTS' })}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+              className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
             >
               {showResults ? 'Hide' : 'Show'} Results
             </button>
           </div>
-
-          {showResults && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-bold mb-4">Winner</h2>
-              {winner ? (
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-semibold">{winner.playerName}</span>
-                  <span className="font-semibold ml-2 text-green-700">{winner.word.length} letters</span>
-                </div>
-              ) : (
-                <p>No winner yet!</p>
-              )}
-              <h2 className="text-xl font-bold mb-4">Submissions</h2>
-              <div className="space-y-4">
-                {playerSubmissions
-                  ?.sort((a, b) => b.score - a.score)
-                  ?.map(submission => (
-                    <div key={`${submission.playerId}-${submission.word}`} className="flex items-center justify-between">
-                      <div>
-                        <span className="font-semibold">{submission.playerName}</span>
-                        <span className="ml-2 text-gray-600">({submission.word.length} letters)</span>
-                      </div>
-                      <span className={`font-semibold ${submission.valid ? 'text-green-700' : 'text-red-700'}`}>{submission.word}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
 
           {showWordLengths && (
             <div className="bg-white p-6 rounded-lg shadow-md">
@@ -265,6 +241,38 @@ const Letters = () => {
               </div>
             </div>
           )}
+
+          {state.matches('completed') && (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-bold mb-4">Winner</h2>
+              {winner ? (
+                <div className="flex items-center justify-between mb-4">
+                  <span className={`font-semibold ${!showResults && 'blur-sm'}`}>{winner.playerName}</span>
+                  <span className={`font-semibold ml-2 text-green-700 ${!showResults && 'blur-sm'}`}>{winner.word.length} letters</span>
+                </div>
+              ) : (
+                <p>No winner!</p>
+              )}
+              <h2 className="text-xl font-bold mb-4">Submissions</h2>
+              <div className="space-y-4">
+                {playerSubmissions?.length === 0 && (
+                  <p>No submissions yet!</p>
+                )}
+                {playerSubmissions
+                  ?.sort((a, b) => b.score - a.score)
+                  ?.map(submission => (
+                    <div key={`${submission.playerId}-${submission.word}`} className="flex items-center justify-between">
+                      <div>
+                        <span className="font-semibold">{submission.playerName}</span>
+                        <span className="ml-2 text-gray-600">({submission.word.length} letters)</span>
+                      </div>
+                      <span className={`font-semibold ${!showResults ? 'text-gray-700' : submission.valid ? 'text-green-700' : 'text-red-700'} ${!showResults && 'blur-sm'}`}>{submission.word}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>
