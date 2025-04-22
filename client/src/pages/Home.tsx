@@ -96,6 +96,7 @@ const Home = () => {
       </div>
       
       <div className="grid md:grid-cols-2 gap-8">
+        {/**
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex items-center space-x-2 mb-4">
             <UserPlus className="h-6 w-6 text-blue-600" />
@@ -110,6 +111,7 @@ const Home = () => {
             {isConnecting ? 'Creating...' : 'Create Group'}
           </button>
         </div>
+        **/}
 
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex items-center space-x-2 mb-4">
