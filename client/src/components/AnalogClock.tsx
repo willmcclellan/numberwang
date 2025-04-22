@@ -250,55 +250,60 @@ const AnalogClock: React.FC<AnalogClockProps> = ({
   return (
     <div className="w-64 h-64 relative flex items-center justify-center">
       {/* Outer circle - dark blue border */}
-      <div className="w-full h-full rounded-full border-8 border-blue-900 bg-blue-500 flex items-center justify-center">
+      <div className="w-full h-full rounded-full border-4 border-blue-900 bg-blue-500 flex items-center justify-center">
         {/* Inner circle - lighter blue fill */}
-        <div className="w-5/6 h-5/6 rounded-full bg-white relative flex items-center justify-center">
+        <div className="w-[95%] h-[95%] rounded-full bg-white relative flex items-center justify-center">
           {/* SVG for tick marks */}
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
             {/* Tick marks */}
-            {Array.from({ length: 30 }, (_, i) => {
-              const tickAngle = i * 12; // 12 degrees per tick (360 / 30)
-              const isHourTick = i % 5 === 0;
-              
+            {Array.from({ length: 12 }, (_, i) => {
+              const tickAngle = i * 30; // 30 degrees per tick (360 / 12)
+
+              // skip for 12,3,6,9
+              if (i % 3 === 0) return null;
+
+
               // Calculate position using trigonometry
               const radians = (tickAngle - 90) * (Math.PI / 180);
               const outerRadius = 46; // Percentage of the SVG viewBox
-              const innerRadius = isHourTick ? 40 : 42; // Shorter for hour ticks
-              
+              const innerRadius = 36
+
               // Start and end coordinates
               const x1 = 50 + outerRadius * Math.cos(radians);
               const y1 = 50 + outerRadius * Math.sin(radians);
               const x2 = 50 + innerRadius * Math.cos(radians);
               const y2 = 50 + innerRadius * Math.sin(radians);
-              
+
               return (
                 <line
-                  key={i}
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke="#666"
-                  strokeWidth={isHourTick ? 1.5 : 1}
+                key={i}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="#666"
+                strokeWidth={1.5}
                 />
               );
             })}
+            <line x1="50" y1="100" x2="50" y2="0" stroke="#666" strokeWidth={1.5} />
+            <line x1="0" y1="50" x2="100" y2="50" stroke="#666" strokeWidth={1.5} />
           </svg>
           
           {/* Clock hand */}
           <div 
-            className="absolute top-0 left-1/2 w-2 h-1/2 bg-blue-500 origin-bottom transition-transform"
+            className="absolute top-0 left-1/2 w-2 h-[50%] bg-blue-500 origin-bottom transition-transform duration-300"
             style={{
               transform: `translateX(-50%) rotate(${currentDegrees}deg)`,
             }}
           />
           
           {/* Central circle */}
-          <div className="absolute top-1/2 left-1/2 w-6 h-6 rounded-full bg-blue-500 transform -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute top-1/2 left-1/2 w-10 h-10 rounded-full bg-blue-500 transform -translate-x-1/2 -translate-y-1/2" />
           
           {/* Timer text */}
-          <div className="absolute bottom-8 w-full text-center">
-            <div className="text-4xl font-bold text-gray-600 font-mono">
+          <div className="absolute bottom-50 w-full text-center">
+            <div className="text-1xl font-medium text-white font-mono">
               {remainingTime}
             </div>
           </div>
