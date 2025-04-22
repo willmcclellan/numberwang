@@ -66,15 +66,8 @@ defmodule CountdownApiWeb.GroupChannel do
     # For simplicity, we're not handling active games here
     # but you could fetch them from GameServer processes
 
-    push(socket, "players_list", %{players: players})
-
-    # Broadcast that a new player joined
-    broadcast_from!(socket, "player_joined", %{
-      player: %{
-        id: socket.assigns.player_id,
-        name: socket.assigns.player_name
-      }
-    })
+    # Broadcast latest players list
+    broadcast_from!(socket, "players_list", %{players: players})
 
     {:noreply, socket}
   end
