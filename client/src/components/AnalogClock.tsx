@@ -4,9 +4,18 @@ interface AnalogClockProps {
   duration: number; // in seconds
   isRunning: boolean;
   onComplete?: () => void;
+  countdownSoundSrc?: string; // Path to the countdown sound file
 }
 
-const AnalogClock: React.FC<AnalogClockProps> = ({ duration, isRunning, onComplete }) => {
+// TODO this isn't doing what I'm expecting. The audio does need trimming/editing to end at the appropriate time
+const AUDIO_DURATION = 31; // Duration of the countdown sound in seconds
+
+const AnalogClock: React.FC<AnalogClockProps> = ({ 
+  duration, 
+  isRunning, 
+  onComplete,
+  countdownSoundSrc = '/sounds/countdown.mp3' // Default sound path
+}) => {
   const timerRef = useRef<{
     startTime: number | null;
     remaining: number;
@@ -16,9 +25,41 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ duration, isRunning, onComple
     remaining: duration,
     lastDuration: duration,
   });
-  
+
+  // Audio ref
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [remainingTime, setRemainingTime] = useState(duration);
+  const [audioInitialized, setAudioInitialized] = useState(false);
+
+  // Initialize audio just once
+  useEffect(() => {
+    const audio = new Audio(countdownSoundSrc);
+
+    // Only set up the audio if this component is still mounted
+    let isMounted = true;
+
+    audio.oncanplaythrough = () => {
+      if (isMounted) {
+        setAudioInitialized(true);
+      }
+    };
+
+    audioRef.current = audio;
+
+    return () => {
+      isMounted = false;
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        } catch (e) {
+          console.error("Error cleaning up audio:", e);
+        }
+      }
+    };
+  }, [countdownSoundSrc]);
   
+  // Handle duration changes
   useEffect(() => {
     if (timerRef.current.lastDuration !== duration) {
       // If we have already started counting down, adjust proportionally
@@ -40,6 +81,68 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ duration, isRunning, onComple
     }
   }, [duration]);
   
+  // Handle sound when running state changes
+  useEffect(() => {
+    if (!audioInitialized || !audioRef.current) return;
+    
+    const audio = audioRef.current;
+    const fullAudioDuration = AUDIO_DURATION; // adjust based on your audio length
+    
+    // Running -> Not Running
+    if (!isRunning) {
+      try {
+        audio.pause();
+      } catch (e) {
+        console.error("Error pausing audio:", e);
+      }
+      return;
+    }
+    
+    // Not Running -> Running
+    if (isRunning && remainingTime > 0) {
+      try {
+        // Calculate starting position
+        const startPoint = Math.max(0, fullAudioDuration - duration);
+        const audioPosition = startPoint + (duration - remainingTime);
+        
+        // Set position and play
+        audio.currentTime = audioPosition;
+        
+        // Use a promise-based approach to ensure we don't interrupt operations
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise
+          .then(() => { console.log("Audio is playing..."); })
+          .catch(e => {
+            console.error("Error playing audio:", e);
+          });
+        }
+      } catch (e) {
+        console.error("Error with audio:", e);
+      }
+    }
+  }, [isRunning, audioInitialized, duration]); // Removed remainingTime dependency
+  
+  // Separate effect to sync audio position with the timer
+  useEffect(() => {
+    if (!audioInitialized || !audioRef.current || !isRunning || remainingTime <= 0) return;
+    
+    const audio = audioRef.current;
+    const fullAudioDuration = AUDIO_DURATION; // adjust based on your audio length
+    const startPoint = Math.max(0, fullAudioDuration - duration);
+    const expectedPosition = startPoint + (duration - remainingTime);
+    
+    // Only adjust if the position is off by more than 0.5 seconds
+    if (Math.abs(audio.currentTime - expectedPosition) > 0.5) {
+      try {
+        audio.currentTime = expectedPosition;
+      } catch (e) {
+        console.error("Error adjusting audio position:", e);
+      }
+    }
+  }, [remainingTime, isRunning, audioInitialized, duration]);
+  
+  // Main timer effect
   useEffect(() => {
     let intervalId: number;
     
@@ -103,7 +206,6 @@ const AnalogClock: React.FC<AnalogClockProps> = ({ duration, isRunning, onComple
     startAngle = 0;   // 12 o'clock
     endAngle = 180;   // 6 o'clock (full rotation + half)
   } else {
-    // For any other duration, default to starting at 12 o'clock
     startAngle = 0;
     endAngle = 180;
   }
