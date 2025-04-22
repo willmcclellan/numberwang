@@ -7,8 +7,7 @@ interface AnalogClockProps {
   countdownSoundSrc?: string; // Path to the countdown sound file
 }
 
-// TODO this isn't doing what I'm expecting. The audio does need trimming/editing to end at the appropriate time
-const AUDIO_DURATION = 31; // Duration of the countdown sound in seconds
+const AUDIO_DURATION = 74; // Duration of the countdown sound in seconds
 
 const AnalogClock: React.FC<AnalogClockProps> = ({ 
   duration, 
@@ -88,15 +87,16 @@ const AnalogClock: React.FC<AnalogClockProps> = ({
     const audio = audioRef.current;
     const fullAudioDuration = AUDIO_DURATION; // adjust based on your audio length
     
+    // NOTE took this out so the end of the sound always plays
     // Running -> Not Running
-    if (!isRunning) {
-      try {
-        audio.pause();
-      } catch (e) {
-        console.error("Error pausing audio:", e);
-      }
-      return;
-    }
+    // if (!isRunning) {
+    //   try {
+    //     audio.pause();
+    //   } catch (e) {
+    //     console.error("Error pausing audio:", e);
+    //   }
+    //   return;
+    // }
     
     // Not Running -> Running
     if (isRunning && remainingTime > 0) {
@@ -104,6 +104,8 @@ const AnalogClock: React.FC<AnalogClockProps> = ({
         // Calculate starting position
         const startPoint = Math.max(0, fullAudioDuration - duration);
         const audioPosition = startPoint + (duration - remainingTime);
+
+        console.debug('Audio position:', audioPosition);
         
         // Set position and play
         audio.currentTime = audioPosition;
@@ -135,6 +137,7 @@ const AnalogClock: React.FC<AnalogClockProps> = ({
     // Only adjust if the position is off by more than 0.5 seconds
     if (Math.abs(audio.currentTime - expectedPosition) > 0.5) {
       try {
+        console.debug('Adjusting audio position:', expectedPosition);
         audio.currentTime = expectedPosition;
       } catch (e) {
         console.error("Error adjusting audio position:", e);

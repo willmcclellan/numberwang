@@ -52,10 +52,10 @@ const Letters = () => {
             type: 'RESULTS',
             results: {
               winner: {
-                playerId: gameResults.winner.player_id,
-                playerName: gameResults.winner.player_name,
-                word: gameResults.winner.value,
-                score: gameResults.winner.score,
+                playerId: gameResults.winner?.player_id,
+                playerName: gameResults.winner?.player_name,
+                word: gameResults.winner?.value,
+                score: gameResults.winner?.score,
               },
               playerSubmissions: gameResults.submissions.map(submission => ({
                 playerId: submission.player_id,
@@ -108,11 +108,13 @@ const Letters = () => {
     winner,
   } = state.context;
 
+  const showClock = state.matches('playing') || state.matches('completed');
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="bg-white p-8 rounded-lg shadow-md">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Letters Round</h1>
-        {state.matches('playing') && (
+        {showClock && (
           <div className="flex justify-center flex-col items-center mb-8">
             <AnalogClock
               duration={gameDuration}
