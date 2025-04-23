@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Shuffle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from 'react-use'
 import { useMachine } from '@xstate/react';
@@ -39,6 +38,7 @@ const Letters = () => {
         startGame: ({ context }) => {
           console.debug('Letters: Starting game with context:', context);
           const { letters, gameDuration } = context;
+          // @ts-expect-error
           startLettersGame(gameId, letters, gameDuration)
         },
         sendSubmission: (_, params: unknown) => {
@@ -213,6 +213,10 @@ const Letters = () => {
           </>
         )}
         <textarea
+          autoCorrect="off"
+          autoComplete="off" 
+          autoCapitalize="off"
+          spellCheck="false"
           className="w-full h-48 mt-4 p-2 border rounded-md font-medium text-lg"
           disabled={!state.matches('playing')}
           placeholder="Type your words here..."
