@@ -63,7 +63,7 @@ const Group = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 items-center md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center space-x-3">
             <Users className="h-8 w-8 text-blue-600" />
             <h1 className="text-2xl font-bold text-gray-800">

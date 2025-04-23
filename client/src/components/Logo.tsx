@@ -1,8 +1,18 @@
 const CountdownLogo = ({ className = '' }: { className?: string }) => {
   const letters = 'NUMBERWANG'.split('');
+
+  const handleClick = () => {
+    const path = window.location.pathname;
+    const urlGroup = path.split('/')[1];
+    if (urlGroup) {
+      window.location.href = `/${urlGroup}`;
+    } else {
+      window.location.href = '/';
+    }
+  }
   
   return (
-    <div className={`flex gap-1 ${className}`}>
+    <div onClick={handleClick} className={`flex gap-1 max-w-full px-4 ${className}`}>
       {letters.map((letter, index) => (
         <div
           key={index}

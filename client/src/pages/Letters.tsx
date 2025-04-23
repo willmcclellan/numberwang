@@ -140,7 +140,7 @@ const Letters = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="bg-white p-8 rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col gap-2 justify-center md:flex-row md:justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Letters Round</h1>
           {state.matches('completed') && (
             <button
@@ -160,21 +160,23 @@ const Letters = () => {
             />
           </div>
         )}
-        <div className="max-w-xl grid grid-cols-9 gap-4 mb-4 mx-auto">
-          {letters.map((letter, index) => (
-            <div
-              key={index}
-              className="w-12 h-12 flex items-center justify-center bg-blue-100 rounded-md text-2xl font-bold text-blue-800"
-            >
-              {letter}
-            </div>
-          ))}
-          {Array(9 - letters.length).fill(null).map((_, index) => (
-            <div
-              key={`empty-${index}`}
-              className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-md"
-            />
-          ))}
+        <div className="max-w-xl mx-auto pb-2">
+          <div className="grid grid-cols-9 gap-1 xs:gap-2 sm:gap-3 md:gap-4 mb-4 min-w-min">
+            {letters.map((letter, index) => (
+              <div
+                key={index}
+                className="w-8 h-8 xs:w-9 xs:h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center bg-blue-100 rounded-md text-lg xs:text-base sm:text-xl md:text-2xl font-bold text-blue-800"
+              >
+                {letter}
+              </div>
+            ))}
+            {Array(9 - letters.length).fill(null).map((_, index) => (
+              <div
+                key={`empty-${index}`}
+                className="w-8 h-8 xs:w-9 xs:h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center bg-gray-100 rounded-md"
+              />
+            ))}
+          </div>
         </div>
 
         {state.matches('selecting') && letters.length < 9 && (
@@ -188,12 +190,11 @@ const Letters = () => {
                 disabled={!state.matches('selecting')}
               />
             </div>
-            <div className="flex justify-center space-x-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button
                 onClick={() => send({ type: 'RANDOM_FILL' })}
-                className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
               >
-                <Shuffle className="w-4 h-4" />
                 <span>Random Fill</span>
               </button>
               <button
@@ -221,7 +222,7 @@ const Letters = () => {
 
       {state.matches('completed') && (
         <div className="space-y-6">
-          <div className="flex justify-center space-x-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {!showWordLengths && (
               <button
                 onClick={() => send({ type: 'TOGGLE_WORD_LENGTHS' })}
