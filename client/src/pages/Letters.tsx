@@ -226,32 +226,16 @@ const Letters = () => {
 
       {state.matches('completed') && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {!showWordLengths && (
-              <button
-                onClick={() => send({ type: 'TOGGLE_WORD_LENGTHS' })}
-                className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700"
-              >
-                {showWordLengths ? 'Hide' : 'Show'} Word Length Distribution
-              </button>
-            )}
-            {!showPossibleWords && (
-              <button
-                onClick={() => send({ type: 'TOGGLE_POSSIBLE_WORDS' })}
-                className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
-              >
-                {showPossibleWords ? 'Hide' : 'Show'} Possible Words
-              </button>
-            )}
+          <div className="flex justify-center">
             <button
               onClick={() => send({ type: 'TOGGLE_RESULTS' })}
-              className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700"
+              className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700"
             >
               {showResults ? 'Hide' : 'Show'} Results
             </button>
           </div>
 
-          {showWordLengths && (
+          {state.matches('completed') && (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-bold mb-4">Word Length Distribution</h2>
               <div className="space-y-2">
@@ -273,17 +257,6 @@ const Letters = () => {
             </div>
           )}
 
-          {showPossibleWords && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-bold mb-4">Possible Words</h2>
-              <div className="grid grid-cols-3 gap-2">
-                {possibleWords.map((word, index) => (
-                  <div key={index} className="text-gray-700">{word}</div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {state.matches('completed') && (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-bold mb-4">Winner</h2>
@@ -293,7 +266,7 @@ const Letters = () => {
                   <span className={`font-semibold ml-2 text-green-700 ${!showResults && 'blur-sm'}`}>{winner.word.length} letters</span>
                 </div>
               ) : (
-                <p>No winner!</p>
+                <p className="mb-4">No winner!</p>
               )}
               <h2 className="text-xl font-bold mb-4">Submissions</h2>
               <div className="space-y-4">
@@ -315,6 +288,16 @@ const Letters = () => {
             </div>
           )}
 
+          {showResults && (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-bold mb-4">Possible Words</h2>
+              <div className="grid grid-cols-3 gap-2">
+                {possibleWords.map((word, index) => (
+                  <div key={index} className="text-gray-700">{word}</div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
